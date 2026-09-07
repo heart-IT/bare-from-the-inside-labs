@@ -8,7 +8,7 @@ const require = createRequire(import.meta.url)
 
 const shim = join(dirname(require.resolve('bare')), 'bin', 'bare')
 const source = readFileSync(shim, 'utf8')
-console.log('the `bare` on your PATH is this file:')
+console.log('the `bare` shim npm installed is this file:')
 console.log('  ' + shim)
 console.log('  ' + source.trimEnd().split('\n').length + ' lines of Node:')
 console.log('')

@@ -56,9 +56,7 @@ if (wanted(3)) {
   try {
     copyFileSync(join(here, 'probes', '03-resolution.js'), join(scratch, '03-resolution.js'))
     bare('03-resolution.js', scratch)
-    console.log('\n  The script was copied, not re-pointed. Resolution walks up from the')
-    console.log('  file that called require(), so moving the file moved the answer —')
-    console.log('  the binary never changed, and it is not where the modules come from.')
+    console.log('\n  The script was copied, not re-pointed. Moving the file moved the answer.')
   } finally {
     rmSync(scratch, { recursive: true, force: true })
   }

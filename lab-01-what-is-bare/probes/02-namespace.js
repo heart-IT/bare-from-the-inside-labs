@@ -1,5 +1,6 @@
 // Everything Bare gives you for free. Note what is missing, and note the four
-// names at the end that have no Node counterpart at all.
+// lifecycle names — suspend, idle, resume, wakeup — that have no Node
+// counterpart at all. The list prints sorted, so they are scattered through it.
 const names = Object.getOwnPropertyNames(Object.getPrototypeOf(Bare)).sort()
 console.log('Bare namespace:', names.join(','))
 console.log('')

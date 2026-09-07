@@ -75,20 +75,18 @@ node:fs      MODULE_NOT_FOUND
 bare-fs      MODULE_NOT_FOUND
 bare-events  MODULE_NOT_FOUND
 
-bare-fs is right there, and `node:fs` still fails: the node: prefix
-is stripped and the rest is resolved as an ordinary package name,
-so require("node:fs") asks for a package called "fs". There is no
-builtin table to consult. See bare-module-resolve/index.js:169-183.
+Nothing resolved. Same binary, same script — the only thing that
+changed is the directory it was run from. Resolution walks up from
+the file that called require(), and there is no node_modules above
+this one. The binary is not where modules come from.
 
-  The script was copied, not re-pointed. Resolution walks up from the
-  file that called require(), so moving the file moved the answer —
-  the binary never changed, and it is not where the modules come from.
+  The script was copied, not re-pointed. Moving the file moved the answer.
 
 ────────────────────────────────────────────────────────────────────────
   4. What `npm i bare` actually installed
      a Node shim, and a per-target prebuilt binary
 ────────────────────────────────────────────────────────────────────────
-the `bare` on your PATH is this file:
+the `bare` shim npm installed is this file:
   <lab>/node_modules/bare/bin/bare
   6 lines of Node:
 
@@ -111,16 +109,18 @@ the real binary it spawns:
 ## What each probe is for
 
 **1 — Identity.** `Bare.version` reports **1.31.0** while `package.json` pins
-`bare@1.31.2`. That is not a bug: the npm `bare` package is a shim, and the
-1.31.2 shim currently depends on `bare-runtime@1.31.0`. The number that matters
-for behaviour is the one the binary reports.
+`bare@1.31.2`. That is not a bug: the npm `bare` package is a shim, and it does
+not pin a binary — it declares `bare-runtime` as a peer dependency with the
+range `*`, so you get whichever `bare-runtime` npm resolves. This lab pins
+`bare-runtime@1.31.0` explicitly so the output above stays reproducible. The
+number that matters for behaviour is the one the binary reports.
 
 **2 — Namespace.** Everything you get without installing anything. `process`,
 `fetch` and `TextEncoder` are absent. `setTimeout` is present, but it comes
 from the `bare-timers` package that the bootstrap installs as a global, not from
-the runtime. The four names at the end of the namespace list — `suspend`,
-`idle`, `resume`, `wakeup` — have no Node counterpart, and they are the reason
-this runtime can live on a phone. Part 3 is about them.
+the runtime. Four names in that list — `suspend`, `idle`, `resume`, `wakeup` —
+have no Node counterpart, and they are the reason this runtime can live on a
+phone. Part 3 is about them.
 
 **3 — Resolution.** The probe runs twice, and the difference is the whole point.
 
