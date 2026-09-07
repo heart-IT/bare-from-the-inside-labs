@@ -9,6 +9,7 @@ something you can run here and watch happen.
 | Lab | Part | What you run |
 |---|---|---|
 | [`lab-01-what-is-bare`](lab-01-what-is-bare) | 1 — Why P2P Needed Its Own Runtime | Four probes: version identity, the `Bare` namespace, what `require()` can find and why, and what `npm i bare` actually installed |
+| [`lab-02-loop`](lab-02-loop) | 2 — What Actually Runs | Four probes: the coarse ordering, where the microtask checkpoint falls (run under Bare *and* Node), `beforeExit` as a repeated question, and every exit path including the one that aborts |
 
 The remaining labs land with their parts.
 
