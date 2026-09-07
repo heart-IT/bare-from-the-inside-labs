@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "bare": "1.31.2",
-    "bare-events": "2.9.2",
+    "bare-crypto": "1.15.3",
     "bare-runtime": "1.31.0"
   },
   "engines": {

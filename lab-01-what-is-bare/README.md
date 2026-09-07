@@ -59,12 +59,20 @@ typeof Buffer     : function
 fs           MODULE_NOT_FOUND
 node:fs      MODULE_NOT_FOUND
 bare-fs      RESOLVED
-bare-events  RESOLVED
+bare-crypto  RESOLVED
 
 bare-fs is right there, and `node:fs` still fails: the node: prefix
 is stripped and the rest is resolved as an ordinary package name,
 so require("node:fs") asks for a package called "fs". There is no
 builtin table to consult. See bare-module-resolve/index.js:169-183.
+
+bare-crypto has two halves. Its JavaScript came from node_modules;
+the addon cache says where the runtime found its C:
+  builtin:bare-crypto@1.15.3
+builtin: — statically linked into this binary, matched by exact
+name@version (src/addon.c:88-103). The thirteen prebuilds under
+node_modules/bare-crypto/prebuilds went unused; delete them and
+this probe prints the same line.
 
 ────────────────────────────────────────────────────────────────────────
   3.5. The same probe, from an empty directory
@@ -73,7 +81,7 @@ builtin table to consult. See bare-module-resolve/index.js:169-183.
 fs           MODULE_NOT_FOUND
 node:fs      MODULE_NOT_FOUND
 bare-fs      MODULE_NOT_FOUND
-bare-events  MODULE_NOT_FOUND
+bare-crypto  MODULE_NOT_FOUND
 
 Nothing resolved. Same binary, same script — the only thing that
 changed is the directory it was run from. Resolution walks up from
@@ -130,6 +138,16 @@ module sitting right there in `node_modules`. The `node:` prefix is not a
 special form; it is stripped, and `fs` is resolved as an ordinary package name
 (`bare-module-resolve/index.js:169-183`). There is no builtin table to consult.
 
+`bare-crypto` resolves too, and it has two halves. Its JavaScript came from
+`node_modules`. Its C is a native addon, and the addon cache shows it loaded as
+`builtin:bare-crypto@1.15.3` — statically linked into the binary, matched by the
+exact `name@version` string (`src/addon.c:88-103`). The thirteen prebuilt
+`.bare` files the package ships went unused; `rm -r
+node_modules/bare-crypto/prebuilds` and the probe prints the same line (to put
+them back, `rm -rf node_modules/bare-crypto && npm i` — a plain `npm i` sees
+the package as installed and leaves it alone). A `bare-crypto` at any other
+version would fall through to its prebuild instead.
+
 Then the same file is copied into an empty temporary directory and run again.
 Nothing resolves. The binary never changed. Module resolution walks up from the
 file that called `require()`, so moving the file moved the answer.
@@ -149,5 +167,5 @@ bin link and even if you have a different `bare` on your `PATH`.
 
 ## Verified against
 
-Bare 1.31.2 source · `bare-runtime` 1.31.0 binary · darwin-arm64 · Node 22.21.0
-— checked 2026-09-03.
+Bare 1.31.2 source · `bare-runtime` 1.31.0 binary · `bare-crypto` 1.15.3 · darwin-arm64 · Node 22.21.0
+— checked 2026-09-07.
