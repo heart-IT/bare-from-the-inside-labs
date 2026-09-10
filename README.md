@@ -11,6 +11,7 @@ something you can run here and watch happen.
 | [`lab-01-what-is-bare`](lab-01-what-is-bare) | 1 — Why P2P Needed Its Own Runtime | Four probes: version identity, the `Bare` namespace, what `require()` can find and why, and what `npm i bare` actually installed |
 | [`lab-02-loop`](lab-02-loop) | 2 — What Actually Runs | Four probes: the coarse ordering, where the microtask checkpoint falls (run under Bare *and* Node), `beforeExit` as a repeated question, and every exit path including the one that aborts |
 | [`lab-03-lifecycle`](lab-03-lifecycle) | 3 — Suspend Is Not Pause | Five probes: suspend against a pending timer, a loop that never drains, a parked runtime freed from another thread, a wakeup deadline that closes a window without cancelling the work, and one suspend cascading into a child runtime |
+| [`lab-04-modules`](lab-04-modules) | 4 — Every Module Is a URL | Five probes: what the binary carries versus what you can require, the candidate list behind a failed lookup, two packages whose key order sends them to different files, the resolutions table the loader writes, and one file that runs under both Bare and Node |
 
 The remaining labs land with their parts.
 

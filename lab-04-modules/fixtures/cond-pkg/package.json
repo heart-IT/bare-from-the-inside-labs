@@ -1,0 +1,1 @@
+{"name":"cond-pkg","version":"1.0.0","exports":{".":{"bare":"./bare.js","node":"./node.js","default":"./default.js"}}}
