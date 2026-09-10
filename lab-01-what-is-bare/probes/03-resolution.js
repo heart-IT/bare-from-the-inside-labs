@@ -42,7 +42,7 @@ if (resolved.has('bare-crypto')) {
   console.log('  ' + key)
   if (key.startsWith('builtin:')) {
     console.log('builtin: — statically linked into this binary, matched by exact')
-    console.log('name@version (src/addon.c:88-103). The thirteen prebuilds under')
+    console.log('name@version (src/addon.c:186-214). The thirteen prebuilds under')
     console.log('node_modules/bare-crypto/prebuilds went unused; delete them and')
     console.log('this probe prints the same line.')
   } else {

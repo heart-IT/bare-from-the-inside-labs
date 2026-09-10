@@ -65,5 +65,5 @@ if (wanted(4)) {
 }
 
 console.log('\n' + '─'.repeat(72))
-console.log('  Post: https://heartit.tech/  · Bare From the Inside, Part 2')
+console.log('  Post: https://heartit.tech/bare-from-the-inside-part-2-what-actually-runs/')
 console.log('─'.repeat(72) + '\n')

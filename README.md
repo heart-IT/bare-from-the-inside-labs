@@ -31,14 +31,25 @@ against is at the bottom of its README.
 
 ## The two Bares
 
-The Bare you run here is not the Bare that runs inside a React Native app. These
-labs use the desktop binary, each lab pinned to the version its post was
-verified against — 1.31.x for labs 01 and 02, 1.32.0 for lab 03. A
-`react-native-bare-kit` 0.15.0 worklet embeds **1.29.4**, because it vendors
-`bare-kit` 2.3.0 and that pins the older runtime. Across that window `bare_runtime_run`, the teardown path and the
-uncaught-exception and unhandled-rejection handlers are byte-identical, and so
-are `bare.c`, `thread.c` and `addon.c` in full; `bare_runtime_setup` and
-`bare_runtime_load` are not, and `runtime.c` grew by 146 lines.
+The Bare you run here is not the Bare that runs inside a React Native app. Every
+lab pins the desktop binary at **1.32.0**, the version the posts are verified
+against. A `react-native-bare-kit` 0.15.0 worklet embeds **1.29.4**, because it
+vendors `bare-kit` 2.3.0 and that pins the older runtime.
+
+Most of what these labs teach survives that gap. The lifecycle is untouched: the
+state enum and every function on the suspend, idle, wakeup, resume and signal
+path are byte-identical between the two tags, so lab 03 describes the phone as
+accurately as the desktop. `bare_runtime_run`'s loop policy is unchanged too —
+the same `do/while` with the same branches — though 1.32.0 wraps it in the addon
+attach/detach pair that Part 7 is about.
+
+One thing does not survive it, and it is in lab 02. Bare's uncaught-exception
+policy grew from nine lines to thirteen in 1.32.0 (bare #184); the four new ones
+are an outer `try` that keeps a throwing handler from re-entering the crash path.
+Probe 4's five cases behave identically on both. A handler that *itself* throws
+does not: on 1.32.0 it prints the second error and aborts with 134, and on
+1.29.4 it recurses until the stack overflows and the process dies at **133 with
+no output at all**. Part 12 teaches the shape that is correct on both.
 
 Every post says which one it means. Labs that only hold on one side say so.
 

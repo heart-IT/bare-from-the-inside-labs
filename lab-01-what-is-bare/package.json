@@ -12,9 +12,9 @@
     "probe:distribution": "node run.mjs 4"
   },
   "dependencies": {
-    "bare": "1.31.2",
+    "bare": "1.32.0",
     "bare-crypto": "1.15.3",
-    "bare-runtime": "1.31.0"
+    "bare-runtime": "1.32.0"
   },
   "engines": {
     "node": ">=18"

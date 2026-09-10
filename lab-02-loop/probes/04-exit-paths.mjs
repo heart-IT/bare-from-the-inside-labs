@@ -35,7 +35,7 @@ const cases = [
   {
     name: 'uncaught throw',
     expect: 134,
-    why: 'bare.js:178-186 prints and calls abort(). Not exit — abort, so no exit event',
+    why: 'bare.js:178-190 prints and calls abort(). Not exit — abort, so no exit event',
     src: 'Bare.on("exit", () => console.log("  exit listener")); throw new Error("boom")'
   },
   {

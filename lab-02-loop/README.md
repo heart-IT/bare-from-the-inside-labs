@@ -87,12 +87,17 @@ Bare.exit(3), timer pending
 
 uncaught throw
   -> exit code 134
-     bare.js:178-186 prints and calls abort(). Not exit — abort, so no exit event
+     bare.js:178-190 prints and calls abort(). Not exit — abort, so no exit event
 
 same throw, one listener
   handled: boom
   -> exit code 0
      the first line of that policy returns early when a listener handles it
+
+
+────────────────────────────────────────────────────────────────────────
+  Post: https://heartit.tech/bare-from-the-inside-part-2-what-actually-runs/
+────────────────────────────────────────────────────────────────────────
 ```
 
 ## What each probe is for
@@ -110,8 +115,8 @@ Both timeouts share a 50 ms deadline, so they come due in the same libuv timer
 phase. `bare-timers` drains its expired-timeout heap in a single call from C, so
 both callbacks execute inside one entry into JavaScript. libjs only runs
 microtasks when the stack returns to **depth one** —
-`if (depth == 1 || always_checkpoint) run_microtasks()`, `libjs/src/js.cc:1741`
-at the commit Bare pins — so the promise scheduled by the first callback waits
+`if (depth == 1 || always_checkpoint) run_microtasks()`, `libjs/src/js.cc:1757`
+at commit `72de271`, the one Bare 1.32.0 pins — so the promise scheduled by the first callback waits
 for the second. Node re-enters JavaScript per timer callback, so its checkpoint
 falls between them.
 
@@ -121,17 +126,23 @@ microseconds apart can land either side of a millisecond boundary. Roughly one
 run in twenty then batches them differently. An explicit deadline removes the
 luck.
 
-**3 — Drain.** `bare_runtime_run` (`bare/src/runtime.c:1613-1641`) emits
+**3 — Drain.** `bare_runtime_run` (`bare/src/runtime.c:1855-1891`) emits
 `beforeExit` *inside* its `do/while` and then re-tests `uv_loop_alive`. A
 listener that schedules work sends the loop around again and gets asked again.
 `exit` is emitted after the loop, so it fires once regardless.
 
 **4 — Exit paths.** Five separate processes, because the exit code is the
 answer. Note the last two: the same throw costs 134 with no listener and 0 with
-one, because Bare's entire uncaught-exception policy is nine lines
-(`bare/src/bare.js:178-186`) whose first line returns early if a listener
-handled it and whose last line is `abort()` — not `exit`, which is why the
+one, because Bare's entire uncaught-exception policy is thirteen lines
+(`bare/src/bare.js:178-190`). It returns early when a listener handled the
+error, and otherwise falls through to `abort()` — not `exit`, which is why the
 `exit` event never fires and the code is 134.
+
+Those thirteen lines were nine until Bare 1.32.0. The four that were added are
+an outer `try` around the `uncaughtException` emit, so a handler that throws
+replaces the original error and falls through to the same single abort instead
+of re-entering the crash path. On a 1.31.x binary that same program recursed
+until the stack overflowed and died at 133 with no output at all.
 
 ## Notes
 
@@ -144,5 +155,6 @@ and hashed identical each time.
 
 ## Verified against
 
-Bare 1.31.2 source · `bare-runtime` 1.31.0 binary · libjs at commit `56f14ed` ·
-darwin-arm64 · Node 22.21.0 — checked 2026-09-07.
+Bare 1.32.0 source · `bare` 1.32.0 shim · `bare-runtime` 1.32.0 binary ·
+`bare-timers` 3.2.3 · libjs at commit `72de271` · darwin-arm64 · Node 22.21.0 —
+checked 2026-09-10.

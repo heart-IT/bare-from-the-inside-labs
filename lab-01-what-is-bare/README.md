@@ -31,13 +31,12 @@ Paths are shortened to `<lab>` below; yours will be absolute. The exact version
 numbers depend on what npm resolves for your platform.
 
 ```
-
 ────────────────────────────────────────────────────────────────────────
   1. What is actually running?
      the npm version and the binary version may differ
 ────────────────────────────────────────────────────────────────────────
-Bare.version : v1.31.0
-Bare.versions: {"bare":"1.31.0","uv":"1.52.1","v8":"14.8.178.31"}
+Bare.version : v1.32.0
+Bare.versions: {"bare":"1.32.0","uv":"1.52.1","v8":"14.8.178.31"}
 platform/arch: darwin-arm64
 
 ────────────────────────────────────────────────────────────────────────
@@ -70,7 +69,7 @@ bare-crypto has two halves. Its JavaScript came from node_modules;
 the addon cache says where the runtime found its C:
   builtin:bare-crypto@1.15.3
 builtin: — statically linked into this binary, matched by exact
-name@version (src/addon.c:88-103). The thirteen prebuilds under
+name@version (src/addon.c:186-214). The thirteen prebuilds under
 node_modules/bare-crypto/prebuilds went unused; delete them and
 this probe prints the same line.
 
@@ -110,18 +109,24 @@ the real binary it spawns:
   exists: true
 
 ────────────────────────────────────────────────────────────────────────
-  Post: https://heartit.tech/  · Bare From the Inside, Part 1
+  Post: https://heartit.tech/bare-from-the-inside-part-1-why-p2p-needed-its-own-runtime/
 ────────────────────────────────────────────────────────────────────────
 ```
 
 ## What each probe is for
 
-**1 — Identity.** `Bare.version` reports **1.31.0** while `package.json` pins
-`bare@1.31.2`. That is not a bug: the npm `bare` package is a shim, and it does
-not pin a binary — it declares `bare-runtime` as a peer dependency with the
-range `*`, so you get whichever `bare-runtime` npm resolves. This lab pins
-`bare-runtime@1.31.0` explicitly so the output above stays reproducible. The
-number that matters for behaviour is the one the binary reports.
+**1 — Identity.** Two numbers that are allowed to disagree, and here happen not
+to. The npm `bare` package is a shim; it does not pin a binary. It declares
+`bare-runtime` as a peer dependency with the range `*`, so you get whichever
+`bare-runtime` npm resolves — which is why this lab pins `bare-runtime`
+explicitly, alongside `bare`, so the output above stays reproducible.
+
+They match at 1.32.0 by coincidence, not by construction. Earlier this lab ran
+`bare@1.31.2` against a `bare-runtime@1.31.0` binary and `Bare.version` said
+`v1.31.0`, because npm published `bare` at 1.31.0, 1.31.1 and 1.31.2 while
+`bare-runtime` went straight from 1.31.0 to 1.32.0 — there was no 1.31.2 binary
+to resolve. The number that matters for behaviour is always the one the binary
+reports.
 
 **2 — Namespace.** Everything you get without installing anything. `process`,
 `fetch` and `TextEncoder` are absent. `setTimeout` is present, but it comes
@@ -141,7 +146,7 @@ special form; it is stripped, and `fs` is resolved as an ordinary package name
 `bare-crypto` resolves too, and it has two halves. Its JavaScript came from
 `node_modules`. Its C is a native addon, and the addon cache shows it loaded as
 `builtin:bare-crypto@1.15.3` — statically linked into the binary, matched by the
-exact `name@version` string (`src/addon.c:88-103`). The thirteen prebuilt
+exact `name@version` string (`src/addon.c:186-214`). The thirteen prebuilt
 `.bare` files the package ships went unused; `rm -r
 node_modules/bare-crypto/prebuilds` and the probe prints the same line (to put
 them back, `rm -rf node_modules/bare-crypto && npm i` — a plain `npm i` sees
@@ -167,5 +172,5 @@ bin link and even if you have a different `bare` on your `PATH`.
 
 ## Verified against
 
-Bare 1.31.2 source · `bare-runtime` 1.31.0 binary · `bare-crypto` 1.15.3 · darwin-arm64 · Node 22.21.0
+Bare 1.32.0 source · `bare` 1.32.0 shim · `bare-runtime` 1.32.0 binary · `bare-crypto` 1.15.3 · darwin-arm64 · Node 22.21.0
 — checked 2026-09-07.

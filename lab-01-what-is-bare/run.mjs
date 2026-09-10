@@ -68,5 +68,5 @@ if (wanted(4)) {
 }
 
 console.log('\n' + '─'.repeat(72))
-console.log('  Post: https://heartit.tech/  · Bare From the Inside, Part 1')
+console.log('  Post: https://heartit.tech/bare-from-the-inside-part-1-why-p2p-needed-its-own-runtime/')
 console.log('─'.repeat(72) + '\n')

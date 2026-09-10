@@ -2,7 +2,7 @@
   "name": "lab-02-loop",
   "version": "1.0.0",
   "private": true,
-  "description": "Bare From the Inside, Part 2 — four probes on the loop that decides when your program is over",
+  "description": "Bare From the Inside, Part 2 \u2014 four probes on the loop that decides when your program is over",
   "type": "commonjs",
   "scripts": {
     "start": "node run.mjs",
@@ -12,8 +12,8 @@
     "probe:exit": "node run.mjs 4"
   },
   "dependencies": {
-    "bare": "1.31.2",
-    "bare-runtime": "1.31.0"
+    "bare": "1.32.0",
+    "bare-runtime": "1.32.0"
   },
   "engines": {
     "node": ">=18"
