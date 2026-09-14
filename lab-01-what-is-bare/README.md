@@ -23,7 +23,7 @@ npm run probe:distribution
 npm run probe:fetch
 ```
 
-Needs Node.js 18+ on macOS or Linux. Node is only used to launch things — the
+Needs Node.js 18+; tested on macOS. Node is only used to launch things — the
 probes themselves run under Bare.
 
 ## What you will see

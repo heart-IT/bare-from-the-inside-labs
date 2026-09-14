@@ -25,7 +25,7 @@ npm install
 npm start
 ```
 
-Node.js 18+ on macOS or Linux. Node launches things; the probes run under Bare.
+Node.js 18+; tested on macOS. Node launches things; the probes run under Bare.
 
 Each lab pins its own dependencies, so a lab keeps producing the output its post
 quotes even after the upstream packages move. The version each lab was checked

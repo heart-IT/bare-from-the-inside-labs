@@ -26,7 +26,7 @@ npm run probe:cascade
 npm run probe:socket
 ```
 
-Needs Node.js 18+ on macOS or Linux. Node launches things; every probe runs
+Needs Node.js 18+; tested on macOS. Node launches things; every probe runs
 under Bare. Every probe ends itself — nothing here needs killing.
 
 The millisecond figures below drift by a few between runs. The orderings and the

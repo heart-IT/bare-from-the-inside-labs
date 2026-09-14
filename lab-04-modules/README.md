@@ -26,7 +26,7 @@ npm run probe:dual
 npm run probe:zlib
 ```
 
-Needs Node.js 18+ on macOS or Linux. Probes 1–4 run under Bare; probes 5 and 6 each
+Needs Node.js 18+; tested on macOS. Probes 1–4 run under Bare; probes 5 and 6 each
 run the same file under both.
 
 The five packages under `fixtures/` are hand-written, two or three lines each,

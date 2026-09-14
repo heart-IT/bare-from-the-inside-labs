@@ -24,7 +24,7 @@ npm run probe:exit
 npm run probe:handles
 ```
 
-Needs Node.js 18+ on macOS or Linux. Node launches things; probes 1–3 and 5 run
+Needs Node.js 18+; tested on macOS. Node launches things; probes 1–3 and 5 run
 under Bare, and probe 2 runs under both so you can see the two disagree.
 
 ## What you will see
