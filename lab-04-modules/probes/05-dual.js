@@ -1,4 +1,4 @@
-// The trick Shoebox runs across 164 packages, in one file.
+// The trick Shoebox runs across 139 packages, in one file.
 //
 // store.js requires 'fs'. This lab's package.json carries:
 //
@@ -7,7 +7,7 @@
 // so the specifier resolves to bare-fs under Bare and to Node's own fs under
 // Node. Nothing coordinates that centrally: in a real Holepunch tree, each
 // package brings its own map. hypercore-storage maps fs, fs/*, os and path;
-// rocksdb-native maps crypto; seventeen packages map events.
+// rocksdb-native maps crypto, fs and path; twelve packages map events.
 const describe = require('../store.js')
 
 const runtime = typeof process === 'undefined' ? 'under Bare' : 'under Node'

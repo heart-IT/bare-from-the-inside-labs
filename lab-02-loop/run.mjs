@@ -67,10 +67,10 @@ if (wanted(4)) {
 if (wanted(5)) {
   heading(5, 'The to-do list, printed', 'bare-walk-handles at five moments, around a timer and a TCP server')
   bare('probes/05-to-do-list.js')
-  console.log('\n  Most handles are Bare\'s and the engine\'s own, unref\'d so they never')
-  console.log('  hold the program open. Only active, ref\'d handles count, and the')
-  console.log('  program ended the moment PREPARE was the last one left: that is the')
-  console.log('  engine\'s own item, and it removes itself once nothing else is queued.')
+  console.log('\n  None of the thirteen handles is yours. Six are unref\'d and most of the')
+  console.log('  rest are inactive, so only active, ref\'d handles count. PREPARE is the')
+  console.log('  engine\'s own: always ref\'d, active only while it has tasks queued or')
+  console.log('  the loop is busy, and the program ended once it was the last one left.')
 }
 
 console.log('\n' + '─'.repeat(72))

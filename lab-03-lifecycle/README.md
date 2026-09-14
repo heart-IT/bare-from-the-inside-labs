@@ -177,7 +177,8 @@ already parked. Without that ref, a program whose last statement is
 
 The 300 ms timer fires 200 ms inside a 500 ms linger because nothing starts a
 timer with linger: `on_suspend` hands it to your listeners, to each child thread
-and to the embedder callback, and forgets it.
+and to the embedder callback, and keeps it only to reuse on a
+resuspend.
 
 **2 — Drain.** `bare_runtime__on_suspend` (`:310-358`) sets the state to
 `suspending`, emits the event, cascades, and calls the embedder callback. It

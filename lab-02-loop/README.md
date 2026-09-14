@@ -108,10 +108,10 @@ timer cleared    14 handles · keeping it alive: PREPARE TCP
 server closed    13 handles · keeping it alive: PREPARE
 exit
 
-  Most handles are Bare's and the engine's own, unref'd so they never
-  hold the program open. Only active, ref'd handles count, and the
-  program ended the moment PREPARE was the last one left: that is the
-  engine's own item, and it removes itself once nothing else is queued.
+  None of the thirteen handles is yours. Six are unref'd and most of the
+  rest are inactive, so only active, ref'd handles count. PREPARE is the
+  engine's own: always ref'd, active only while it has tasks queued or
+  the loop is busy, and the program ended once it was the last one left.
 
 ────────────────────────────────────────────────────────────────────────
   Post: https://heartit.tech/bare-from-the-inside-part-2-what-actually-runs/
@@ -167,12 +167,15 @@ loop, with whether it is active and whether it is ref'd. libuv counts a handle
 toward keeping the loop alive only when it is both — `uv__handle_start` and
 `uv__handle_ref` add to `loop->active_handles` only in that case
 (`libuv/src/uv-common.h:288-310` at v1.52.1), and `uv__loop_alive` tests that
-counter (`libuv/src/unix/core.c:393-398`), alongside pending requests, which
-this package does not list. So the probe names only active, ref'd handles.
+counter (`libuv/src/unix/core.c:393-398`), alongside active requests, the
+pending-callback queue and closing handles, none of which this package lists.
+So the probe names only active, ref'd handles.
 
-Thirteen handles exist before your code does anything, and one is counted.
-The rest are Bare's and libjs's own machinery, unref'd so they can never be the
-reason a program stays up. `setTimeout` does not add a handle: `bare-timers`
+Thirteen handles exist before your code does anything, and one is both active
+and ref'd. Six are unref'd — libjs's task-runner and environment handles, Bare's
+sleep-request and wakeup-deadline handles, and the `bare` command's SIGUSR1
+signal handle — and the rest are inactive until something uses them.
+`setTimeout` does not add a handle: `bare-timers`
 created its `uv_timer`, `uv_check` and `uv_idle` when it loaded
 (`bare-timers/binding.c:259-265`, called once from the `Scheduler` at
 `index.js:300`), and the first timeout makes the timer active. The TCP server adds
@@ -182,10 +185,10 @@ The handle that never leaves the list is libjs's `uv_prepare`, started when the
 environment is created (`libjs/src/js.cc:1490-1493`). Its callback runs the
 engine's queued tasks and then stops the handle if none are left
 (`js.cc:1866-1878`, called from `on_prepare` at `:1886`); `on_check` starts it
-again whenever the loop is still alive for another reason (`:1895-1899`). So it
-is counted while JavaScript is running or something else is pending, and it
-takes itself off the list once the engine is idle and nothing else is — which
-is why the program exits right after the last line shows only `PREPARE`.
+again whenever the loop is still alive for another reason (`:1895-1899`). It is
+never unref'd; it is active while the engine has tasks queued or something else
+keeps the loop alive, and it stops itself once neither holds — which is why the
+program exits right after the last line shows only `PREPARE`.
 
 ## Notes
 

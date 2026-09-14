@@ -76,7 +76,7 @@ if (wanted(4)) {
 }
 
 if (wanted(5)) {
-  heading(5, 'One file, two runtimes', 'the trick Shoebox runs across 164 packages')
+  heading(5, 'One file, two runtimes', 'the trick Shoebox runs across 139 packages')
   console.log('under Bare:')
   bare('probes/05-dual.js')
   console.log('\nunder Node:')

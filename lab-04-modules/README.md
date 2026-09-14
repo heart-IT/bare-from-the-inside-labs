@@ -113,7 +113,7 @@ makes them exist.
 
 ────────────────────────────────────────────────────────────────────────
   5. One file, two runtimes
-     the trick Shoebox runs across 164 packages
+     the trick Shoebox runs across 139 packages
 ────────────────────────────────────────────────────────────────────────
 under Bare:
   got a filesystem · under Bare
@@ -211,10 +211,10 @@ This lab's `package.json` carries one map:
 ```
 
 so the specifier resolves to `bare-fs` under Bare and Node's own `fs` under Node.
-Nothing coordinates that centrally. In Shoebox's worker tree — 164 packages —
-thirteen distinct specifiers are mapped this way by the packages themselves:
+Nothing coordinates that centrally. In Shoebox's worker at `ch10-shipping` — 139 packages —
+twelve distinct specifiers are mapped this way by the packages themselves:
 `hypercore-storage` maps `fs`, `fs/*`, `os` and `path`; `rocksdb-native` maps
-`crypto`; seventeen packages map `events`. Delete the `imports` block here and
+`crypto`; twelve packages map `events`. Delete the `imports` block here and
 Node keeps working while Bare gives you `MODULE_NOT_FOUND` for `fs`.
 
 **6 — zlib.** Probe 5 showed the mechanism with `fs`; this is the same move
