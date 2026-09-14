@@ -1,7 +1,7 @@
 // Bare From the Inside, Part 4 — lab driver.
 //
-// Five probes on how a specifier becomes a URL. Probe 5 runs the same file
-// under Bare and under Node, because the difference is the lesson.
+// Six probes on how a specifier becomes a URL. Probes 5 and 6 run the same
+// file under Bare and under Node, because the difference is the lesson.
 //
 // The fixtures are five hand-written packages under fixtures/. They are copied
 // into node_modules/ before the probes run: npm will not install them, and
@@ -84,6 +84,17 @@ if (wanted(5)) {
   console.log('\n  store.js asks for "fs" both times. This lab\'s package.json maps')
   console.log('  that specifier under the `bare` condition and leaves `default`')
   console.log('  alone, so each runtime answers it with its own filesystem.')
+}
+
+if (wanted(6)) {
+  heading(6, 'A Node API with a bare-* counterpart', 'Node\'s zlib code, unchanged, on both runtimes')
+  console.log('under Bare:')
+  bare('probes/06-zlib.js')
+  console.log('\nunder Node:')
+  node('probes/06-zlib.js')
+  console.log('\n  The probe calls gzipSync and gunzipSync by Node\'s names. One more')
+  console.log('  line in the imports map sends "zlib" to bare-zlib under Bare, and')
+  console.log('  bare-zlib answers to the same names. Nothing else was ported.')
 }
 
 console.log('\n' + '─'.repeat(72))

@@ -2,10 +2,11 @@
   "name": "lab-04-modules",
   "version": "1.0.0",
   "private": true,
-  "description": "Bare From the Inside, Part 4 — five probes on specifier-to-URL resolution",
+  "description": "Bare From the Inside, Part 4 — six probes on specifier-to-URL resolution",
   "type": "commonjs",
   "imports": {
-    "fs": { "bare": "bare-fs", "default": "fs" }
+    "fs": { "bare": "bare-fs", "default": "fs" },
+    "zlib": { "bare": "bare-zlib", "default": "zlib" }
   },
   "scripts": {
     "start": "node run.mjs",
@@ -13,11 +14,13 @@
     "probe:candidates": "node run.mjs 2",
     "probe:conditions": "node run.mjs 3",
     "probe:resolutions": "node run.mjs 4",
-    "probe:dual": "node run.mjs 5"
+    "probe:dual": "node run.mjs 5",
+    "probe:zlib": "node run.mjs 6"
   },
   "dependencies": {
     "bare": "1.32.0",
-    "bare-runtime": "1.32.0"
+    "bare-runtime": "1.32.0",
+    "bare-zlib": "1.4.1"
   },
   "engines": {
     "node": ">=18"

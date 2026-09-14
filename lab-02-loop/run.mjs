@@ -1,6 +1,6 @@
 // Bare From the Inside, Part 2 — lab driver.
 //
-// Runs the four probes in order. Probe 2 runs twice, under Bare and under
+// Runs the five probes in order. Probe 2 runs twice, under Bare and under
 // Node, because the difference between the two runs is the lesson.
 import { spawnSync } from 'node:child_process'
 import { join, dirname } from 'node:path'
@@ -62,6 +62,15 @@ if (wanted(4)) {
     cwd: here,
     stdio: 'inherit'
   })
+}
+
+if (wanted(5)) {
+  heading(5, 'The to-do list, printed', 'bare-walk-handles at five moments, around a timer and a TCP server')
+  bare('probes/05-to-do-list.js')
+  console.log('\n  Most handles are Bare\'s and the engine\'s own, unref\'d so they never')
+  console.log('  hold the program open. Only active, ref\'d handles count, and the')
+  console.log('  program ended the moment PREPARE was the last one left: that is the')
+  console.log('  engine\'s own item, and it removes itself once nothing else is queued.')
 }
 
 console.log('\n' + '─'.repeat(72))

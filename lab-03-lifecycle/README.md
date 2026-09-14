@@ -2,10 +2,11 @@
 
 Companion lab for **Bare From the Inside — Part 3: Suspend Is Not Pause**.
 
-Five probes on the five lifecycle states: what `Bare.suspend()` actually does to
+Six probes on the five lifecycle states: what `Bare.suspend()` actually does to
 a running program, why a loop with work left can never reach `idle`, the single
-`uv_ref` that parks it, the one interval the runtime enforces, and how one
-suspend reaches a runtime nobody addressed.
+`uv_ref` that parks it, the one interval the runtime enforces, how one suspend
+reaches a runtime nobody addressed, and why a UDP socket from `bare-dgram` is
+yours to close.
 
 ## Run it
 
@@ -22,6 +23,7 @@ npm run probe:drain
 npm run probe:parked
 npm run probe:deadline
 npm run probe:cascade
+npm run probe:socket
 ```
 
 Needs Node.js 18+ on macOS or Linux. Node launches things; every probe runs
@@ -132,6 +134,28 @@ tick at 1809 ms
   listened and cleared its own interval.
 
 ────────────────────────────────────────────────────────────────────────
+  6. A socket is work, and closing it is yours
+     one UDP socket, suspended twice: left open, then closed
+────────────────────────────────────────────────────────────────────────
+  left open:
+first socket received "ping"
+suspend — leaving the socket open
+1 s later — still suspending, never idle. Leaving via Bare.exit.
+
+  closed on suspend, reopened on resume:
+first socket received "ping"
+suspend — closing the socket
+idle
+resume — opening a new socket
+second socket received "ping"
+
+  bare-dgram listens for no lifecycle event. Left open, its socket
+  is a ref'd handle, so uv_run never returns and idle never comes;
+  the 1 s timer is unref'd and could not be the reason. Closed in the
+  suspend listener, the loop empties and idle arrives, and a
+  new socket opened on resume works as the first one did.
+
+────────────────────────────────────────────────────────────────────────
   Post: https://heartit.tech/bare-from-the-inside-part-3-suspend-is-not-pause/
 ────────────────────────────────────────────────────────────────────────
 ```
@@ -214,6 +238,31 @@ That is the two-layer problem on a phone in miniature: react-native-bare-kit
 makes this same `Bare.suspend` call for you, and no Holepunch library is
 subscribed to the event it produces.
 
+**6 — Socket.** `bare-dgram` is Bare's UDP socket package, and its JavaScript
+subscribes to no `Bare` lifecycle event: `grep` its `index.js` and `lib/` for
+`suspend` or `idle` and nothing comes back. Its native half holds a libuv
+`uv_udp_t` (`bare-dgram/binding.c:14`, initialised at `:380`), a ref'd handle
+unless you call `socket.unref()`. So probe 2's rule applies to a socket exactly
+as it applied to an interval: left open, the socket keeps `uv_run` from
+returning and `idle` never arrives.
+
+The run that leaves the socket open ends itself with a 1 s timer, and that timer
+is `unref()`'d on purpose, so it is not work the loop waits on. Without the
+socket, `Bare.suspend()` plus the same unref'd timer reaches `idle`. The socket
+is the only thing standing between the first run and `idle`.
+
+The second run closes the socket in its `suspend` listener. The loop empties,
+`idle` arrives, the listener calls `Bare.resume()`, and the `resume` listener
+binds a brand-new socket that sends and receives a datagram of its own. A closed
+socket is not reopened; you make another.
+
+Hyperswarm's transport is also a UDP socket, from `udx-native` rather than
+`bare-dgram`, and it too leaves `suspend()` and `resume()` to the app. Same kind
+of socket, same rule: the runtime going quiet is something your code does by
+closing things.
+
+Both runs are deterministic: ten runs of each produced byte-identical output.
+
 ## Notes
 
 The driver resolves the Bare shim through the `bare` package entry point rather
@@ -228,4 +277,5 @@ outside.
 ## Verified against
 
 Bare 1.32.0 source · `bare` 1.32.0 shim · `bare-runtime` 1.32.0 binary ·
-`bare-timers` 3.2.3 · darwin-arm64 · Node 22.21.0 — checked 2026-09-10.
+`bare-timers` 3.2.3 · `bare-dgram` 1.1.1 · darwin-arm64 · Node 22.21.0 — checked
+2026-09-14.

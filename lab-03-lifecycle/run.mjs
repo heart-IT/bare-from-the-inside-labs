@@ -28,11 +28,10 @@ function heading (n, title, note) {
   console.log('─'.repeat(72))
 }
 
-function bare (script, opts = {}) {
-  return spawnSync(process.execPath, [shim, join(here, script)], {
+function bare (script, ...args) {
+  return spawnSync(process.execPath, [shim, join(here, script), ...args], {
     cwd: here,
-    stdio: 'inherit',
-    ...opts
+    stdio: 'inherit'
   })
 }
 
@@ -79,6 +78,19 @@ if (wanted(5)) {
   console.log('  hands each child the same request and the same linger. What it does')
   console.log('  not do is close anything — the child reached \'idle\' only because it')
   console.log('  listened and cleared its own interval.')
+}
+
+if (wanted(6)) {
+  heading(6, 'A socket is work, and closing it is yours', 'one UDP socket, suspended twice: left open, then closed')
+  console.log('  left open:')
+  bare('probes/06-socket.js', 'open')
+  console.log('\n  closed on suspend, reopened on resume:')
+  bare('probes/06-socket.js', 'close')
+  console.log('\n  bare-dgram listens for no lifecycle event. Left open, its socket')
+  console.log('  is a ref\'d handle, so uv_run never returns and idle never comes;')
+  console.log('  the 1 s timer is unref\'d and could not be the reason. Closed in the')
+  console.log('  suspend listener, the loop empties and idle arrives, and a')
+  console.log('  new socket opened on resume works as the first one did.')
 }
 
 console.log('\n' + '─'.repeat(72))

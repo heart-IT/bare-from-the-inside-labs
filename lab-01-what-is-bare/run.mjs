@@ -1,6 +1,6 @@
 // Bare From the Inside, Part 1 — lab driver.
 //
-// Runs the four probes in order. Probe 3 runs twice, from two different
+// Runs the five probes in order. Probe 3 runs twice, from two different
 // directories, because the difference between the two runs is the lesson.
 import { spawnSync } from 'node:child_process'
 import { mkdtempSync, copyFileSync, rmSync } from 'node:fs'
@@ -65,6 +65,11 @@ if (wanted(3)) {
 if (wanted(4)) {
   heading(4, 'What `npm i bare` actually installed', 'a Node shim, and a per-target prebuilt binary')
   spawnSync(process.execPath, [join(here, 'probes', '04-distribution.mjs')], { cwd: here, stdio: 'inherit' })
+}
+
+if (wanted(5)) {
+  heading(5, 'The tool you expected built in', 'fetch, from two npm packages: bare-fetch and bare-http1')
+  bare('probes/05-fetch.js')
 }
 
 console.log('\n' + '─'.repeat(72))

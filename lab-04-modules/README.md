@@ -2,10 +2,11 @@
 
 Companion lab for **Bare From the Inside — Part 4: Every Module Is a URL**.
 
-Five probes on how a specifier becomes a URL: what the binary carries versus
+Six probes on how a specifier becomes a URL: what the binary carries versus
 what you can require, the candidate list behind a failed lookup, two packages
 whose key order sends them to different files, the resolutions table the loader
-writes after every lookup, and one file that runs under both Bare and Node.
+writes after every lookup, one file that runs under both Bare and Node, and
+Node's own `zlib` code running unchanged on Bare through `bare-zlib`.
 
 ## Run it
 
@@ -22,10 +23,11 @@ npm run probe:candidates
 npm run probe:conditions
 npm run probe:resolutions
 npm run probe:dual
+npm run probe:zlib
 ```
 
-Needs Node.js 18+ on macOS or Linux. Probes 1–4 run under Bare; probe 5 runs the
-same file under both.
+Needs Node.js 18+ on macOS or Linux. Probes 1–4 run under Bare; probes 5 and 6 each
+run the same file under both.
 
 The five packages under `fixtures/` are hand-written, two or three lines each,
 and the runner copies them into `node_modules/` before the probes start — npm
@@ -125,6 +127,23 @@ under Node:
   alone, so each runtime answers it with its own filesystem.
 
 ────────────────────────────────────────────────────────────────────────
+  6. A Node API with a bare-* counterpart
+     Node's zlib code, unchanged, on both runtimes
+────────────────────────────────────────────────────────────────────────
+under Bare:
+  5000 bytes -> 49 bytes gzipped -> round trip ok · under Bare
+  gzip bytes: H4sIAAAAAAAAE+3EIREAAAgEsCqUe/9Hf0EK3CbWZKeSJEmSJEmSPjsBIgobiBMAAA==
+  and "zlib" resolved to: …/node_modules/bare-zlib/index.js
+
+under Node:
+  5000 bytes -> 49 bytes gzipped -> round trip ok · under Node
+  gzip bytes: H4sIAAAAAAAAE+3EIREAAAgEsCqUe/9Hf0EK3CbWZKeSJEmSJEmSPjsBIgobiBMAAA==
+
+  The probe calls gzipSync and gunzipSync by Node's names. One more
+  line in the imports map sends "zlib" to bare-zlib under Bare, and
+  bare-zlib answers to the same names. Nothing else was ported.
+
+────────────────────────────────────────────────────────────────────────
   Post: https://heartit.tech/bare-from-the-inside-part-4-every-module-is-a-url/
 ────────────────────────────────────────────────────────────────────────
 
@@ -198,6 +217,24 @@ thirteen distinct specifiers are mapped this way by the packages themselves:
 `crypto`; seventeen packages map `events`. Delete the `imports` block here and
 Node keeps working while Bare gives you `MODULE_NOT_FOUND` for `fs`.
 
+**6 — zlib.** Probe 5 showed the mechanism with `fs`; this is the same move
+for the question you meet when adding a dependency: a Node API with a `bare-*`
+counterpart that answers to Node's names. `06-zlib.js` calls
+`zlib.gzipSync` and `zlib.gunzipSync` exactly as a Node script would. The
+lab's `imports` map gains one line:
+
+```json
+"zlib": { "bare": "bare-zlib", "default": "zlib" }
+```
+
+and `bare-zlib` exports `gzipSync`, `gunzipSync`, `createGzip` and the rest
+under those names (`bare-zlib/index.js:240-374`), so the code does not change.
+On this machine the compressed bytes are identical under both runtimes, which
+the base64 line shows; that is a measurement here, not a promise the two
+libraries make. `bare-node-runtime` ships the same mapping pre-written: its
+`imports.json` sends both `zlib` and `node:zlib` to `bare-zlib` under the
+`bare` condition.
+
 ## Notes
 
 The driver resolves the Bare shim through the `bare` package entry point rather
@@ -210,5 +247,6 @@ you cloned this. Everything else is stable.
 ## Verified against
 
 Bare 1.32.0 source · `bare` 1.32.0 shim · `bare-runtime` 1.32.0 binary ·
-`bare-module` 6.4.0 · `bare-module-resolve` 1.12.5 · darwin-arm64 ·
-Node 22.21.0 — checked 2026-09-10.
+`bare-module` 6.4.0 · `bare-module-resolve` 1.12.5 · `bare-zlib` 1.4.1 ·
+`bare-node-runtime` 1.5.0 (probe 6's note only) · darwin-arm64 · Node 22.21.0 —
+checked 2026-09-14.

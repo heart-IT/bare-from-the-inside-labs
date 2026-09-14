@@ -2,18 +2,21 @@
   "name": "lab-01-what-is-bare",
   "version": "1.0.0",
   "private": true,
-  "description": "Bare From the Inside, Part 1 \u2014 four probes against a real Bare binary",
+  "description": "Bare From the Inside, Part 1 — five probes against a real Bare binary",
   "type": "commonjs",
   "scripts": {
     "start": "node run.mjs",
     "probe:identity": "node run.mjs 1",
     "probe:namespace": "node run.mjs 2",
     "probe:resolution": "node run.mjs 3",
-    "probe:distribution": "node run.mjs 4"
+    "probe:distribution": "node run.mjs 4",
+    "probe:fetch": "node run.mjs 5"
   },
   "dependencies": {
     "bare": "1.32.0",
     "bare-crypto": "1.15.3",
+    "bare-fetch": "3.3.0",
+    "bare-http1": "4.6.1",
     "bare-runtime": "1.32.0"
   },
   "engines": {

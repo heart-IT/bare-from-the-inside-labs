@@ -2,9 +2,10 @@
 
 Companion lab for **Bare From the Inside — Part 2: What Actually Runs**.
 
-Four probes on the loop that decides when your program is over: the coarse
+Five probes on the loop that decides when your program is over: the coarse
 ordering, where the microtask checkpoint falls, `beforeExit` as a question the
-loop asks repeatedly, and every way a Bare program can end.
+loop asks repeatedly, every way a Bare program can end, and the loop's to-do
+list printed with `bare-walk-handles`.
 
 ## Run it
 
@@ -20,10 +21,11 @@ npm run probe:ordering
 npm run probe:checkpoint
 npm run probe:drain
 npm run probe:exit
+npm run probe:handles
 ```
 
-Needs Node.js 18+ on macOS or Linux. Node launches things; probes 1–3 run under
-Bare, and probe 2 runs under both so you can see the two disagree.
+Needs Node.js 18+ on macOS or Linux. Node launches things; probes 1–3 and 5 run
+under Bare, and probe 2 runs under both so you can see the two disagree.
 
 ## What you will see
 
@@ -96,6 +98,22 @@ same throw, one listener
 
 
 ────────────────────────────────────────────────────────────────────────
+  5. The to-do list, printed
+     bare-walk-handles at five moments, around a timer and a TCP server
+────────────────────────────────────────────────────────────────────────
+start            13 handles · keeping it alive: PREPARE
+timer set        13 handles · keeping it alive: PREPARE TIMER
+server listening 14 handles · keeping it alive: PREPARE TIMER TCP
+timer cleared    14 handles · keeping it alive: PREPARE TCP
+server closed    13 handles · keeping it alive: PREPARE
+exit
+
+  Most handles are Bare's and the engine's own, unref'd so they never
+  hold the program open. Only active, ref'd handles count, and the
+  program ended the moment PREPARE was the last one left: that is the
+  engine's own item, and it removes itself once nothing else is queued.
+
+────────────────────────────────────────────────────────────────────────
   Post: https://heartit.tech/bare-from-the-inside-part-2-what-actually-runs/
 ────────────────────────────────────────────────────────────────────────
 ```
@@ -144,6 +162,31 @@ replaces the original error and falls through to the same single abort instead
 of re-entering the crash path. On a 1.31.x binary that same program recursed
 until the stack overflowed and died at 133 with no output at all.
 
+**5 — The to-do list.** `bare-walk-handles` lists every libuv handle on the
+loop, with whether it is active and whether it is ref'd. libuv counts a handle
+toward keeping the loop alive only when it is both — `uv__handle_start` and
+`uv__handle_ref` add to `loop->active_handles` only in that case
+(`libuv/src/uv-common.h:288-310` at v1.52.1), and `uv__loop_alive` tests that
+counter (`libuv/src/unix/core.c:393-398`), alongside pending requests, which
+this package does not list. So the probe names only active, ref'd handles.
+
+Thirteen handles exist before your code does anything, and one is counted.
+The rest are Bare's and libjs's own machinery, unref'd so they can never be the
+reason a program stays up. `setTimeout` does not add a handle: `bare-timers`
+created its `uv_timer`, `uv_check` and `uv_idle` when it loaded
+(`bare-timers/binding.c:259-265`, called once from the `Scheduler` at
+`index.js:300`), and the first timeout makes the timer active. The TCP server adds
+one, and closing it removes it.
+
+The handle that never leaves the list is libjs's `uv_prepare`, started when the
+environment is created (`libjs/src/js.cc:1490-1493`). Its callback runs the
+engine's queued tasks and then stops the handle if none are left
+(`js.cc:1866-1878`, called from `on_prepare` at `:1886`); `on_check` starts it
+again whenever the loop is still alive for another reason (`:1895-1899`). So it
+is counted while JavaScript is running or something else is pending, and it
+takes itself off the list once the engine is idle and nothing else is — which
+is why the program exits right after the last line shows only `PREPARE`.
+
 ## Notes
 
 The driver resolves the Bare shim through the `bare` package entry point rather
@@ -153,8 +196,13 @@ bin link and even if you have a different `bare` on your `PATH`.
 Every probe's output is stable: the full run was executed 20 consecutive times
 and hashed identical each time.
 
+Probe 5's handle totals (13 and 14) were measured on darwin-arm64. They count
+every handle Bare, libjs and the loaded packages created, so another platform
+may print different totals.
+
 ## Verified against
 
 Bare 1.32.0 source · `bare` 1.32.0 shim · `bare-runtime` 1.32.0 binary ·
-`bare-timers` 3.2.3 · libjs at commit `72de271` · darwin-arm64 · Node 22.21.0 —
-checked 2026-09-10.
+`bare-timers` 3.2.3 · `bare-walk-handles` 2.1.0 · `bare-tcp` 2.6.1 · libjs at
+commit `72de271` · libuv 1.52.1 · darwin-arm64 · Node 22.21.0 — checked
+2026-09-14.

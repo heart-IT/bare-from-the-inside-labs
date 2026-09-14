@@ -2,9 +2,9 @@
 
 Companion lab for **Bare From the Inside — Part 1: Why P2P Needed Its Own Runtime**.
 
-Four probes against a real Bare binary: what version is actually running, what
-the `Bare` namespace holds, what `require()` refuses to find, and what
-`npm i bare` put on your disk.
+Five probes against a real Bare binary: what version is actually running, what
+the `Bare` namespace holds, what `require()` refuses to find, what
+`npm i bare` put on your disk, and `fetch` arriving from two npm packages.
 
 ## Run it
 
@@ -20,6 +20,7 @@ npm run probe:identity
 npm run probe:namespace
 npm run probe:resolution
 npm run probe:distribution
+npm run probe:fetch
 ```
 
 Needs Node.js 18+ on macOS or Linux. Node is only used to launch things — the
@@ -109,6 +110,20 @@ the real binary it spawns:
   exists: true
 
 ────────────────────────────────────────────────────────────────────────
+  5. The tool you expected built in
+     fetch, from two npm packages: bare-fetch and bare-http1
+────────────────────────────────────────────────────────────────────────
+typeof fetch (global)  : undefined
+bare-fetch GET         : 200 hello from bare-http1
+typeof fetch (global)  : undefined
+after bare-fetch/global: function
+
+Neither package is part of the runtime. Both came from node_modules,
+pinned in package.json. Installing them added names you can require,
+not globals; the global fetch appeared only when bare-fetch/global
+was required.
+
+────────────────────────────────────────────────────────────────────────
   Post: https://heartit.tech/bare-from-the-inside-part-1-why-p2p-needed-its-own-runtime/
 ────────────────────────────────────────────────────────────────────────
 ```
@@ -164,6 +179,17 @@ per-target packages (`bare-runtime-darwin-arm64`, `-ios-arm64`,
 exactly one. The prebuild ships non-executable; the shim `chmod`s it on first
 spawn (`bare-runtime/lib/spawn.js:25-29`).
 
+**5 — Fetch.** Probe 2 showed `typeof fetch` is `undefined`. Here it arrives
+from npm: `bare-http1` serves one response on a local port and `bare-fetch`
+requests it. Neither is part of the runtime, and installing them does not
+create a global — the probe binds the client as `bareFetch`, because
+`const fetch = require('bare-fetch')` would shadow the global and make the
+first `typeof fetch` throw. The global appears only when you ask for it with
+`require('bare-fetch/global')`, which assigns `fetch`, `Request`, `Response`
+and `Headers` (`bare-fetch/global.js`). Underneath, `bare-http1` depends on
+`bare-tcp`, a native addon with prebuilds for the same thirteen targets as the
+binary.
+
 ## Notes
 
 The driver resolves the Bare shim through the `bare` package entry point rather
@@ -172,5 +198,5 @@ bin link and even if you have a different `bare` on your `PATH`.
 
 ## Verified against
 
-Bare 1.32.0 source · `bare` 1.32.0 shim · `bare-runtime` 1.32.0 binary · `bare-crypto` 1.15.3 · darwin-arm64 · Node 22.21.0
-— checked 2026-09-07.
+Bare 1.32.0 source · `bare` 1.32.0 shim · `bare-runtime` 1.32.0 binary · `bare-crypto` 1.15.3 · `bare-fetch` 3.3.0 · `bare-http1` 4.6.1 · darwin-arm64 · Node 22.21.0
+— checked 2026-09-14.
