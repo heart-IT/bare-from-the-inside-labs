@@ -51,9 +51,10 @@ its addons into your temporary directory the first time it starts; delete
 
 ## What you will see
 
-`bare` in the post's commands is the pinned shim, which the probes run as
-`node node_modules/bare/bin/bare`: npm links no `bare` command here, because
-`bare` and `bare-runtime` both declare one. "Somewhere else" in probes 3, 4
+`bare` in the post's commands is the pinned shim at
+`node_modules/bare/bin/bare`, which the probes run with `node`; from another
+folder, give its full path. npm links no `bare` command here, because `bare`
+and `bare-runtime` both declare one. "Somewhere else" in probes 3, 4
 and 8 is a new folder under your temp directory, printed as `<elsewhere>`.
 
 Paths are printed relative to the lab as `<lab>`. Uncaught errors are cut to
