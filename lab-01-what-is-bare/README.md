@@ -132,7 +132,9 @@ was required.
 
 ## What each probe is for
 
-**1 — Identity.** Two numbers that are allowed to disagree, and here do. The
+**1 — Identity.** Two numbers that are allowed to disagree, and here do:
+probe 1 prints the binary's `v1.33.4`, while `package.json` pins the `bare`
+shim at 1.33.5. The
 npm `bare` package is a shim; it does not pin a binary. It declares
 `bare-runtime` as a peer dependency with the range `*`, so you get whichever
 `bare-runtime` npm resolves — which is why this lab pins `bare-runtime`
@@ -161,8 +163,10 @@ special form; it is stripped, and `fs` is resolved as an ordinary package name
 `bare-crypto` resolves too, and it has two halves. Its JavaScript came from
 `node_modules`, and so did its C: `require.addon.resolve('bare-crypto')` asks
 the module system where that package's addon is, and gets one of the thirteen
-prebuilt `.bare` files the package ships. On macOS, `DYLD_PRINT_LIBRARIES=1` in front of the `bare`
-command shows the process opening that same file.
+prebuilt `.bare` files the package ships. On macOS,
+`DYLD_PRINT_LIBRARIES=1 node node_modules/bare/bin/bare -e 'require("bare-crypto")' 2>&1 | grep bare-crypto.bare`
+shows the process opening that same file. Launch the shim with `node` directly:
+through the `#!/usr/bin/env` shebang, macOS strips `DYLD_*` variables.
 
 The binary carries its own `bare-crypto` 1.15.3 as well, compiled in and
 registered under the exact string `bare-crypto@1.15.3` (`src/addon.c:191-219`);
