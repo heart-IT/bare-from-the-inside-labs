@@ -1,0 +1,8 @@
+{
+  "name": "lab-07-memory-ffmpeg",
+  "private": true,
+  "description": "bare-ffmpeg lives here because it installs FFmpeg prebuilds for 13 hosts (about 420 MB)",
+  "dependencies": {
+    "bare-ffmpeg": "1.6.0"
+  }
+}

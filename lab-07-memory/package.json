@@ -1,0 +1,24 @@
+{
+  "name": "lab-07-memory",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bare From the Inside, Part 7 — who owns memory that crosses between C and JavaScript",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node run.mjs",
+    "probe:handles": "node run.mjs 1",
+    "probe:lend": "node run.mjs 2",
+    "probe:early-free": "node run.mjs 3",
+    "probe:wrap": "node run.mjs 4",
+    "probe:exit": "node run.mjs 5",
+    "probe:ffmpeg": "npm ci --prefix ffmpeg --no-audit --no-fund && node run.mjs 6"
+  },
+  "devDependencies": {
+    "bare": "1.33.5",
+    "bare-headers": "1.33.2",
+    "bare-runtime": "1.33.4"
+  },
+  "engines": {
+    "node": ">=18.20.8"
+  }
+}
