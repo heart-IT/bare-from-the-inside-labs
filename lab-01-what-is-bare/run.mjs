@@ -3,7 +3,7 @@
 // Runs the five probes in order. Probe 3 runs twice, from two different
 // directories, because the difference between the two runs is the lesson.
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, copyFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, copyFileSync, mkdirSync, readdirSync, rmSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -48,10 +48,28 @@ if (wanted(2)) {
 }
 
 if (wanted(3)) {
-  heading(3, 'What require() can find — from this directory', 'node_modules is populated here')
+  // The post runs this probe three times: after `npm i bare`, after
+  // `npm i bare-crypto`, and from an empty folder. The first state is a
+  // folder whose node_modules has everything this lab installed except
+  // bare-crypto; linking the rest keeps it offline and the same versions.
+  heading('3a', 'What require() can find — before `npm i bare-crypto`', 'Bare installed, bare-crypto not')
+  const before = mkdtempSync(join(tmpdir(), 'lab-01-'))
+  try {
+    mkdirSync(join(before, 'node_modules'))
+    for (const name of readdirSync(join(here, 'node_modules'))) {
+      if (name === 'bare-crypto' || name.startsWith('.')) continue
+      symlinkSync(join(here, 'node_modules', name), join(before, 'node_modules', name), 'junction')
+    }
+    copyFileSync(join(here, 'probes', '03-resolution.js'), join(before, '03-resolution.js'))
+    bare('03-resolution.js', before)
+  } finally {
+    rmSync(before, { recursive: true, force: true })
+  }
+
+  heading('3b', 'What require() can find — after `npm i bare-crypto`', 'this lab directory, where package.json pins it')
   bare('probes/03-resolution.js')
 
-  heading(3.5, 'The same probe, from an empty directory', 'same binary, same script, nothing on disk beside it')
+  heading('3c', 'The same probe, from an empty directory', 'same binary, same script, nothing on disk beside it')
   const scratch = mkdtempSync(join(tmpdir(), 'lab-01-'))
   try {
     copyFileSync(join(here, 'probes', '03-resolution.js'), join(scratch, '03-resolution.js'))

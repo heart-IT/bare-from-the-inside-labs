@@ -3,8 +3,9 @@
 Companion lab for **Bare From the Inside — Part 1: Why P2P Needed Its Own Runtime**.
 
 Five probes against a real Bare binary: what version is actually running, what
-the `Bare` namespace holds, what `require()` refuses to find, what
-`npm i bare` put on your disk, and `fetch` arriving from two npm packages.
+the `Bare` namespace holds, what `require()` finds before and after
+`npm i bare-crypto` and from an empty folder, what `npm i bare` put on your
+disk, and `fetch` arriving from two npm packages.
 
 ## Run it
 
@@ -54,8 +55,22 @@ typeof setTimeout : function (from bare-timers, not the runtime)
 typeof Buffer     : function
 
 ────────────────────────────────────────────────────────────────────────
-  3. What require() can find — from this directory
-     node_modules is populated here
+  3a. What require() can find — before `npm i bare-crypto`
+     Bare installed, bare-crypto not
+────────────────────────────────────────────────────────────────────────
+fs           MODULE_NOT_FOUND
+node:fs      MODULE_NOT_FOUND
+bare-fs      RESOLVED
+bare-crypto  MODULE_NOT_FOUND
+
+bare-fs is right there, and `node:fs` still fails: the node: prefix
+is stripped and the rest is resolved as an ordinary package name,
+so require("node:fs") asks for a package called "fs". There is no
+builtin table to consult. See bare-module-resolve/index.js:169-183.
+
+────────────────────────────────────────────────────────────────────────
+  3b. What require() can find — after `npm i bare-crypto`
+     this lab directory, where package.json pins it
 ────────────────────────────────────────────────────────────────────────
 fs           MODULE_NOT_FOUND
 node:fs      MODULE_NOT_FOUND
@@ -77,7 +92,7 @@ copy serves Bare's own bundled JavaScript; your require() is given
 no builtins (bin/bare.js:87-99), so it looks for addons on disk.
 
 ────────────────────────────────────────────────────────────────────────
-  3.5. The same probe, from an empty directory
+  3c. The same probe, from an empty directory
      same binary, same script, nothing on disk beside it
 ────────────────────────────────────────────────────────────────────────
 fs           MODULE_NOT_FOUND
@@ -152,7 +167,12 @@ the runtime. Four names in that list — `suspend`, `idle`, `resume`, `wakeup` �
 have no Node counterpart, and they are how a host puts this runtime to sleep
 and wakes it. Part 3 is about them.
 
-**3 — Resolution.** The probe runs twice, and the difference is the whole point.
+**3 — Resolution.** The probe runs three times, in the post's order, and the
+difference is the whole point. 3a runs it from a temporary folder whose
+`node_modules` links every package this lab installed except `bare-crypto`: the
+state right after `npm i bare`, where `bare-crypto` is `MODULE_NOT_FOUND`. 3b
+runs it from this directory, where `package.json` pins `bare-crypto`. 3c runs it
+from an empty folder.
 
 From this directory, `bare-fs` resolves — it arrives as a dependency of
 `bare-runtime`. And `require('node:fs')` **still fails**, with the filesystem
