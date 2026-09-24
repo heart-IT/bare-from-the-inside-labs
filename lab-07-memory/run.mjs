@@ -4,8 +4,8 @@
 // handle kept too long and a reference that keeps its value, bytes C lends and
 // borrows, bytes freed too early under AddressSanitizer, a pointer wrapped in
 // an object, what runs when the environment is destroyed, and bare-ffmpeg's
-// handles. The addon is built into out/, which each probe that needs it
-// rebuilds, so the probes can run in any order.
+// handles. The addon is built into out/ by the first probe of each run that
+// needs it, so the probes can run in any order.
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, rmSync } from 'node:fs'
 import { join, dirname } from 'node:path'
