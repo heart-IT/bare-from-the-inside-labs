@@ -12,7 +12,7 @@
     "probe:deadline": "node run.mjs 4",
     "probe:cascade": "node run.mjs 5",
     "probe:socket": "node run.mjs 6",
-    "probe:one-turn": "node run.mjs 7"
+    "probe:one-pass": "node run.mjs 7"
   },
   "dependencies": {
     "bare": "1.33.5",

@@ -1,7 +1,7 @@
 // Requests are flags, not a queue, so several can land before the loop reads
 // them. Run twice: `cancel` is Bare.suspend(); Bare.resume(), and `flick` is
 // Bare.suspend(); Bare.resume(); Bare.suspend() — a background, foreground,
-// background flick inside one turn.
+// background flick inside one pass.
 //
 // bare_runtime_suspend sets `suspend` and `resuspend`; bare_runtime_resume sets
 // `resume` and clears `resuspend`. The signal handler reads them all at once

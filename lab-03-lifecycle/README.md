@@ -6,7 +6,7 @@ Seven probes on the five lifecycle states: what `Bare.suspend()` does to a
 running program, why a loop with work left can never reach `idle`, the single
 `uv_ref` that parks it, the one interval the runtime enforces, how one suspend
 reaches a runtime nobody addressed, why a UDP socket from `bare-dgram` is yours
-to close, and what happens when several requests land in one turn.
+to close, and what happens when several requests land in one pass.
 
 ## Run it
 
@@ -24,36 +24,40 @@ npm run probe:parked
 npm run probe:deadline
 npm run probe:cascade
 npm run probe:socket
-npm run probe:one-turn
+npm run probe:one-pass
 ```
 
 Tested with Node.js 18.20.8, 20.19.4 and 22.21.0 on macOS. Node launches
 things; every probe runs under Bare. Every probe ends itself — nothing here
 needs killing.
 
-The millisecond figures below vary between runs: by up to about 110 ms in
+The millisecond figures below vary between runs: by up to about 50 ms in
 probes 3, 4 and 5, whose clocks run across child-thread start-ups, and by up to
-12 ms elsewhere. Across 30 runs (ten under each Node version above) every line
-and its order matched once each figure and its padding was masked; the orderings
-are the point.
+13 ms elsewhere. Across 110 full runs under Node 22.21.0, plus one fresh
+`npm ci && npm start` under each Node version above, every probe exited 0 and
+every line and its order matched once each figure and its padding was masked;
+the orderings are the point. An earlier batch of 120 runs matched in 119: in one,
+probe 3 stopped after child A parked. That has not been reproduced since and its
+cause is unknown. If a probe ends with a non-zero status or a signal, the driver
+prints it and `npm start` exits 1.
 
 ## What you will see
 
 ```
 ────────────────────────────────────────────────────────────────────────
-  1. Suspend is a request, not a statement
+  1. Suspend is a request, not a stop
      the next line runs, and so does a pending timer
 ────────────────────────────────────────────────────────────────────────
 statement after suspend ran at 0 ms
-suspend, linger 500 at 2 ms
+suspend, linger 500 at 1 ms
 300 ms timer fired at 301 ms
-idle at 302 ms
+idle at 301 ms
 resume at 302 ms
 exit at 302 ms
 
   The statement after Bare.suspend() ran, and it ran before the
   'suspend' event: the request is two flags and a uv_async_send, read
-  on the loop's next turn. The 300 ms timer fired 200 ms inside a
+  on the loop's next pass. The 300 ms timer fired 200 ms inside a
   500 ms linger, because nothing starts a timer with linger.
 
 ────────────────────────────────────────────────────────────────────────
@@ -62,15 +66,15 @@ exit at 302 ms
 ────────────────────────────────────────────────────────────────────────
 suspend, linger 500 — now waiting for a drain that never comes
 tick at 201 ms
-tick at 401 ms
-tick at 602 ms
-tick at 804 ms
-tick at 1005 ms
-tick at 1206 ms
-tick at 1407 ms
-tick at 1608 ms
-tick at 1809 ms
-2001 ms — still suspending, never idle. Leaving via Bare.exit.
+tick at 402 ms
+tick at 603 ms
+tick at 803 ms
+tick at 1004 ms
+tick at 1205 ms
+tick at 1406 ms
+tick at 1607 ms
+tick at 1807 ms
+2002 ms — still suspending, never idle. Leaving via Bare.exit.
 
   on_suspend closes no handle and stops no timer. A ref'd interval
   means uv_run never returns, so the branch that would emit 'idle'
@@ -81,24 +85,24 @@ tick at 1809 ms
      three children: one arms nothing on the way down, one an earlier timer, one a later one
 ────────────────────────────────────────────────────────────────────────
    0 ms [main] A: parking a child that arms nothing
-  54 ms   [A] parked, 100 ms timer still pending
- 447 ms [main] A: 400 ms parked and that timer has not fired. Resuming from this thread.
- 448 ms   [A] resumed
- 448 ms   [A] the pending 100 ms timer fired
- 508 ms [main] A joined — the overdue timer drained on resume, not during the park
- 509 ms [main] B: parking a child whose idle listener arms a 50 ms timer
- 544 ms   [B] parked, 100 ms timer still pending
- 595 ms   [B] 50 ms timer armed during idle fired
- 645 ms   [B] the pending 100 ms timer fired
- 940 ms   [B] resumed
- 940 ms [main] B joined
- 940 ms [main] C: parking a child whose idle listener arms a 300 ms timer
- 974 ms   [C] parked, 100 ms timer still pending
-1370 ms [main] C: 400 ms parked and neither timer has fired. Resuming from this thread.
-1370 ms   [C] resumed
-1370 ms   [C] the pending 100 ms timer fired
-1370 ms   [C] 300 ms timer armed during idle fired
-1431 ms [main] C joined
+  10 ms   [A] parked, 100 ms timer still pending
+ 410 ms [main] A: 400 ms parked and that timer has not fired. Resuming from this thread.
+ 410 ms   [A] resumed
+ 411 ms   [A] the pending 100 ms timer fired
+ 472 ms [main] A joined — the overdue timer drained on resume, not during the park
+ 472 ms [main] B: parking a child whose idle listener arms a 50 ms timer
+ 504 ms   [B] parked, 100 ms timer still pending
+ 555 ms   [B] 50 ms timer armed during idle fired
+ 604 ms   [B] the pending 100 ms timer fired
+ 902 ms   [B] resumed
+ 902 ms [main] B joined
+ 902 ms [main] C: parking a child whose idle listener arms a 300 ms timer
+ 933 ms   [C] parked, 100 ms timer still pending
+1331 ms [main] C: 400 ms parked and neither timer has fired. Resuming from this thread.
+1332 ms   [C] resumed
+1332 ms   [C] the pending 100 ms timer fired
+1332 ms   [C] 300 ms timer armed during idle fired
+1393 ms [main] C joined
 
   A parked with a timer pending and it stayed pending — bare-timers
   stops its uv handles on 'idle'. B armed one new timer from its idle
@@ -110,22 +114,22 @@ tick at 1809 ms
   they could run themselves.
 
 ────────────────────────────────────────────────────────────────────────
-  4. A wakeup deadline is a ceiling, not an allowance
+  4. A wakeup deadline is a maximum, not a duration
      and it closes the window without cancelling the work
 ────────────────────────────────────────────────────────────────────────
    0 ms [main] A: 100 ms of budget, 300 ms of work
-  33 ms   [A] idle — asking for 100 ms and starting 300 ms of work in it
-  33 ms   [A] wakeup, deadline 100
-  33 ms   [A] ...which is 200 ms more than the budget
- 134 ms   [A] idle again — window closed, 300 ms of work still pending
- 334 ms   [A] the 300 ms of work finished
- 429 ms [main] A joined — the deadline closed the window; it did not cancel the work
- 429 ms [main] B: 200 ms of budget, 30 ms of work
- 462 ms   [B] idle — asking for 200 ms and starting 30 ms of work in it
- 462 ms   [B] wakeup, deadline 200
- 494 ms   [B] the 30 ms of work finished
- 494 ms   [B] idle again — window closed, 30 ms of work already done
- 858 ms [main] B joined — the loop emptied first, so the deadline was never reached
+  11 ms   [A] idle — asking for 100 ms and starting 300 ms of work in it
+  11 ms   [A] wakeup, deadline 100
+  11 ms   [A] ...which is 200 ms more than the budget
+ 111 ms   [A] idle again — window closed, 300 ms of work still pending
+ 312 ms   [A] the 300 ms of work finished
+ 411 ms [main] A joined — the deadline closed the window; it did not cancel the work
+ 411 ms [main] B: 200 ms of budget, 30 ms of work
+ 427 ms   [B] idle — asking for 200 ms and starting 30 ms of work in it
+ 427 ms   [B] wakeup, deadline 200
+ 458 ms   [B] the 30 ms of work finished
+ 458 ms   [B] idle again — window closed, 30 ms of work already done
+ 826 ms [main] B joined — the loop emptied first, so the deadline was never reached
 
   A asked for 100 ms and started 300 ms of work: the deadline stopped
   the loop on time and the work finished afterwards, outside the
@@ -135,12 +139,12 @@ tick at 1809 ms
   5. Suspension cascades; sockets do not
      one Bare.suspend(), two runtimes
 ────────────────────────────────────────────────────────────────────────
- 141 ms [main]   suspend, linger 1234
- 141 ms   [thread] suspend, linger 1234 — nobody addressed me
- 142 ms   [thread] idle — the interval was the only thing keeping me busy
- 290 ms [main]   resume
- 291 ms   [thread] resume
- 440 ms [main]   joined
+ 110 ms [main]   suspend, linger 1234
+ 111 ms   [thread] suspend, linger 1234 — nobody addressed me
+ 111 ms   [thread] idle — the interval was the only thing keeping me busy
+ 260 ms [main]   resume
+ 260 ms   [thread] resume
+ 410 ms [main]   joined
 
   Nobody addressed the child. on_suspend walks the thread list and
   hands each child the same request and the same linger. What it does
@@ -164,13 +168,13 @@ resume — opening a new socket
 second socket received "ping"
 
   bare-dgram listens for no lifecycle event. Left open, its socket
-  is a ref'd handle, so uv_run never returns and idle never comes;
+  is receiving, an active ref'd handle, so uv_run never returns;
   the 1 s timer is unref'd and could not be the reason. Closed in the
   suspend listener, the loop empties and idle arrives, and a
   new socket opened on resume works as the first one did.
 
 ────────────────────────────────────────────────────────────────────────
-  7. Several requests, one turn
+  7. Several requests, one pass
      flags, not a queue: a cancelled suspend, then a flick
 ────────────────────────────────────────────────────────────────────────
   Bare.suspend(); Bare.resume():
@@ -202,7 +206,7 @@ exit
 mutex, records the linger, sets two flags and `uv_async_send`s the runtime's
 signal handle. It touches no JavaScript, which is why the statement after
 `Bare.suspend()` runs — and runs *before* the `suspend` event, which has not
-been emitted yet. The request is read on the loop's next turn.
+been emitted yet. The request is read on the loop's next pass.
 
 One step is missing from those twelve lines, because it cannot be done there.
 `uv_ref` is not safe to call from another thread and `bare_runtime_suspend`
@@ -285,9 +289,11 @@ dht-rpc or udx-native is subscribed to the event it produces.
 subscribes to no `Bare` lifecycle event: `grep` its `index.js` and `lib/` for
 `suspend` or `idle` and nothing comes back. Its native half holds a libuv
 `uv_udp_t` (`bare-dgram/binding.c:14`, initialised at `:380`), a ref'd handle
-unless you call `socket.unref()`. So probe 2's rule applies to a socket exactly
-as it applied to an interval: left open, the socket keeps `uv_run` from
-returning and `idle` never arrives.
+unless you call `socket.unref()`, and binding the socket starts it receiving
+(`index.js:641` → `uv_udp_recv_start`, `binding.c:591`), which makes the handle
+active. A ref'd, active handle keeps the loop alive, so probe 2's rule applies
+to a socket exactly as it applied to an interval: left open, the socket keeps
+`uv_run` from returning and `idle` never arrives.
 
 The run that leaves the socket open ends itself with a 1 s timer, and that timer
 is `unref()`'d on purpose, so it is not work the loop waits on. Without the
@@ -306,7 +312,7 @@ closing things.
 
 Both runs are deterministic: ten runs of each produced byte-identical output.
 
-**7 — One turn.** A request is flags and a ping, not a queue entry, so several
+**7 — One pass.** A request is flags and a ping, not a queue entry, so several
 can land before the loop reads them. `bare_runtime_suspend` sets `suspend` and
 `resuspend`; `bare_runtime_resume` sets `resume` and clears `resuspend`
 (`:1481-1490`). The signal handler copies every flag at once and applies them in
@@ -317,7 +323,7 @@ set.
 So `Bare.suspend(); Bare.resume()` prints `suspend`, `resume`, `exit` and never
 reaches `idle`, as the header promises (`bare/include/bare.h:203-209`): "if the
 process is not yet idle after being suspended the suspension will be
-cancelled." And a background, foreground, background flick inside one turn,
+cancelled." And a background, foreground, background flick inside one pass,
 `Bare.suspend(); Bare.resume(); Bare.suspend()`, ends suspending again and
 reaches `idle` once the loop is empty. Its `idle` listener resumes only so the
 probe ends itself, as Bare's own `test/suspend-resume-suspend.js` does.

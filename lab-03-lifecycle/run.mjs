@@ -29,18 +29,23 @@ function heading (n, title, note) {
 }
 
 function bare (script, ...args) {
-  return spawnSync(process.execPath, [shim, join(here, script), ...args], {
+  const r = spawnSync(process.execPath, [shim, join(here, script), ...args], {
     cwd: here,
     stdio: 'inherit'
   })
+  if (r.status !== 0) {
+    console.log(`\n  ${script} ended with ${r.signal ? `signal ${r.signal}` : `exit status ${r.status}`}`)
+    process.exitCode = 1
+  }
+  return r
 }
 
 if (wanted(1)) {
-  heading(1, 'Suspend is a request, not a statement', 'the next line runs, and so does a pending timer')
+  heading(1, 'Suspend is a request, not a stop', 'the next line runs, and so does a pending timer')
   bare('probes/01-request.js')
   console.log('\n  The statement after Bare.suspend() ran, and it ran before the')
   console.log("  'suspend' event: the request is two flags and a uv_async_send, read")
-  console.log('  on the loop\'s next turn. The 300 ms timer fired 200 ms inside a')
+  console.log('  on the loop\'s next pass. The 300 ms timer fired 200 ms inside a')
   console.log('  500 ms linger, because nothing starts a timer with linger.')
 }
 
@@ -66,7 +71,7 @@ if (wanted(3)) {
 }
 
 if (wanted(4)) {
-  heading(4, 'A wakeup deadline is a ceiling, not an allowance', 'and it closes the window without cancelling the work')
+  heading(4, 'A wakeup deadline is a maximum, not a duration', 'and it closes the window without cancelling the work')
   bare('probes/04-deadline.js')
   console.log('\n  A asked for 100 ms and started 300 ms of work: the deadline stopped')
   console.log('  the loop on time and the work finished afterwards, outside the')
@@ -89,18 +94,18 @@ if (wanted(6)) {
   console.log('\n  closed on suspend, reopened on resume:')
   bare('probes/06-socket.js', 'close')
   console.log('\n  bare-dgram listens for no lifecycle event. Left open, its socket')
-  console.log('  is a ref\'d handle, so uv_run never returns and idle never comes;')
+  console.log('  is receiving, an active ref\'d handle, so uv_run never returns;')
   console.log('  the 1 s timer is unref\'d and could not be the reason. Closed in the')
   console.log('  suspend listener, the loop empties and idle arrives, and a')
   console.log('  new socket opened on resume works as the first one did.')
 }
 
 if (wanted(7)) {
-  heading(7, 'Several requests, one turn', 'flags, not a queue: a cancelled suspend, then a flick')
+  heading(7, 'Several requests, one pass', 'flags, not a queue: a cancelled suspend, then a flick')
   console.log('  Bare.suspend(); Bare.resume():')
-  bare('probes/07-one-turn.js', 'cancel')
+  bare('probes/07-one-pass.js', 'cancel')
   console.log('\n  Bare.suspend(); Bare.resume(); Bare.suspend():')
-  bare('probes/07-one-turn.js', 'flick')
+  bare('probes/07-one-pass.js', 'flick')
   console.log('\n  The signal handler reads every flag at once and applies suspend,')
   console.log('  wakeup, resume, then a second suspend if one came after the resume.')
   console.log('  A resume before the loop empties cancels the suspension, so the')
