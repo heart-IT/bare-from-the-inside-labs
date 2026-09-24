@@ -1,0 +1,31 @@
+{
+  "name": "lab-05-bundle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bare From the Inside, Part 5 — one app, packed per host",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node run.mjs",
+    "probe:hand": "node run.mjs 1",
+    "probe:pack": "node run.mjs 2",
+    "probe:embedded": "node run.mjs 3",
+    "probe:offload": "node run.mjs 4",
+    "probe:mobile": "node run.mjs 5",
+    "probe:link": "node run.mjs 6",
+    "probe:standalone": "npm ci --prefix standalone --no-audit --no-fund && node run.mjs 7",
+    "probe:dynamic": "node run.mjs 8"
+  },
+  "dependencies": {
+    "bare-fetch": "3.4.0",
+    "bare-http1": "4.6.2"
+  },
+  "devDependencies": {
+    "bare": "1.33.5",
+    "bare-link": "3.3.0",
+    "bare-pack": "2.2.2",
+    "bare-runtime": "1.33.4"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

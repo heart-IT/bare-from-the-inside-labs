@@ -1,0 +1,8 @@
+{
+  "name": "lab-05-bundle-standalone",
+  "private": true,
+  "description": "bare-build lives here because it installs a Bare executable for all 13 hosts (about 1 GB)",
+  "dependencies": {
+    "bare-build": "1.1.1"
+  }
+}
