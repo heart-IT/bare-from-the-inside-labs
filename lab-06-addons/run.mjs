@@ -150,7 +150,7 @@ if (wanted(3)) {
 }
 
 if (wanted(4)) {
-  heading(4, 'The other door: a constructor', 'the same add.c, built with BARE_MODULE_REGISTER_CONSTRUCTOR')
+  heading(4, 'The other way in: a constructor', 'the same add.c, built with BARE_MODULE_REGISTER_CONSTRUCTOR')
   if (!needsMac()) {
     const dir = fresh('constructor')
     const r = compile('add.c', join(dir, 'add.bare'), ['-undefined', 'dynamic_lookup', '-DBARE_MODULE_REGISTER_CONSTRUCTOR'])
@@ -179,7 +179,7 @@ if (wanted(5)) {
 }
 
 if (wanted(6)) {
-  heading(6, 'Showcase: bare-sqlite', 'a query, the prebuild behind it, and the same file under Node')
+  heading(6, 'Showcase: bare-sqlite + bare-sqlite-vector', 'a query, the prebuild behind it, and the same file under Node')
   bare(['probes/sqlite.js'])
 
   const prebuilds = join(here, 'node_modules/bare-sqlite/prebuilds')

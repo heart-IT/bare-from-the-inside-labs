@@ -101,7 +101,7 @@ numbers change between Bare releases.
   bare: require('./add.node').add(2, 3) → 5
 
 ────────────────────────────────────────────────────────────────────────
-  4. The other door: a constructor
+  4. The other way in: a constructor
      the same add.c, built with BARE_MODULE_REGISTER_CONSTRUCTOR
 ────────────────────────────────────────────────────────────────────────
   add.bare exports nothing
@@ -123,7 +123,7 @@ numbers change between Bare releases.
   exit status 0
 
 ────────────────────────────────────────────────────────────────────────
-  6. Showcase: bare-sqlite
+  6. Showcase: bare-sqlite + bare-sqlite-vector
      a query, the prebuild behind it, and the same file under Node
 ────────────────────────────────────────────────────────────────────────
   [ { name: 'alice', distance: 0.141421377658844 } ]
