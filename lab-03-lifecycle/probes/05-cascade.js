@@ -12,8 +12,8 @@
 // thread never does, because it still has timers pending.
 //
 // That is the shape of the two-layer problem on a phone: react-native-bare-kit
-// makes this same Bare.suspend call for you, and no Holepunch library is
-// subscribed to the event it produces.
+// makes this same Bare.suspend call for you, and none of Hyperswarm, hyperdht,
+// dht-rpc or udx-native is subscribed to the event it produces.
 const t0 = Date.now()
 const at = () => `${String(Date.now() - t0).padStart(4)} ms`
 

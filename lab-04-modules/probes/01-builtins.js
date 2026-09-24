@@ -22,7 +22,8 @@ for (const name of names) {
 console.log('')
 
 // The same module system, handed a builtins map through its public
-// createRequire option. require.main.constructor is bare-module itself.
+// createRequire option. require.main.constructor is a subclass of
+// bare-module's Module and inherits its statics, createRequire among them.
 const Module = require.main.constructor
 const handed = Module.createRequire(module.url, {
   protocol: module.protocol,

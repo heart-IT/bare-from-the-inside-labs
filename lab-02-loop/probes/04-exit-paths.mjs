@@ -41,7 +41,7 @@ const cases = [
   {
     name: 'same throw, one listener',
     expect: 0,
-    why: 'the first line of that policy returns early when a listener handles it',
+    why: 'the first statement of the policy returns early when a listener handles it',
     src:
       'Bare.on("uncaughtException", e => console.log("  handled:", e.message)); ' +
       'setTimeout(() => { throw new Error("boom") }, 1)'

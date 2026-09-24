@@ -1,6 +1,6 @@
 // Bare From the Inside, Part 3 — lab driver.
 //
-// Runs the five probes in order. Every probe ends itself. Probe 2 has to do it
+// Runs the seven probes in order. Every probe ends itself. Probe 2 has to do it
 // with Bare.exit, because it is the one demonstrating a loop that never drains
 // — and killing it from here would not work anyway: the `bare` on your PATH is
 // a Node shim that spawns the real binary as a grandchild and, with
@@ -49,17 +49,19 @@ if (wanted(2)) {
   bare('probes/02-never-drains.js')
   console.log('\n  on_suspend closes no handle and stops no timer. A ref\'d interval')
   console.log('  means uv_run never returns, so the branch that would emit \'idle\'')
-  console.log('  is never reached. Suspension is a protocol, not an enforcement.')
+  console.log('  is never reached. Suspension is an agreement, not an enforcement.')
 }
 
 if (wanted(3)) {
-  heading(3, 'Idle is one uv_ref, and another thread lifts it', 'two children: one arms a timer on the way down, one does not')
+  heading(3, 'Idle is one uv_ref, and another thread lifts it', 'three children: one arms nothing on the way down, one an earlier timer, one a later one')
   bare('probes/03-parked.js')
   console.log('\n  A parked with a timer pending and it stayed pending — bare-timers')
   console.log("  stops its uv handles on 'idle'. B armed one new timer from its idle")
   console.log('  listener, which re-armed the handle that was just stopped, and that')
   console.log('  handle serves the whole heap: B\'s pending timer fired too. A stop')
-  console.log('  is not a lock. Both were freed by the main thread, not by anything')
+  console.log('  is not a lock. C armed a timer due after the pending one, and a new')
+  console.log('  timer restarts the handle only when it is the earliest, so nothing')
+  console.log('  fired. All three were freed by the main thread, not by anything')
   console.log('  they could run themselves.')
 }
 
@@ -91,6 +93,18 @@ if (wanted(6)) {
   console.log('  the 1 s timer is unref\'d and could not be the reason. Closed in the')
   console.log('  suspend listener, the loop empties and idle arrives, and a')
   console.log('  new socket opened on resume works as the first one did.')
+}
+
+if (wanted(7)) {
+  heading(7, 'Several requests, one turn', 'flags, not a queue: a cancelled suspend, then a flick')
+  console.log('  Bare.suspend(); Bare.resume():')
+  bare('probes/07-one-turn.js', 'cancel')
+  console.log('\n  Bare.suspend(); Bare.resume(); Bare.suspend():')
+  bare('probes/07-one-turn.js', 'flick')
+  console.log('\n  The signal handler reads every flag at once and applies suspend,')
+  console.log('  wakeup, resume, then a second suspend if one came after the resume.')
+  console.log('  A resume before the loop empties cancels the suspension, so the')
+  console.log('  first run never reaches idle; the flick ends suspending again.')
 }
 
 console.log('\n' + '─'.repeat(72))

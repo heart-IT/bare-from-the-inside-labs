@@ -5,8 +5,8 @@
 //
 // The fixtures are six hand-written packages under fixtures/. They are copied
 // into node_modules/ before the probes run: npm will not install them, and
-// node_modules is gitignored, so the copy is what makes them exist. Each is two
-// or three lines — a package.json shaped to make one resolution decision
+// node_modules is gitignored, so the copy is what makes them exist. Each is a
+// package.json and one to three one-line files — the package.json shaped to make one resolution decision
 // visible, and just enough JavaScript to prove which branch was taken.
 import { spawnSync } from 'node:child_process'
 import { cpSync, mkdirSync, readdirSync } from 'node:fs'

@@ -36,7 +36,7 @@ npm run probe:dynamic
 Needs Node.js 22; tested with 22.21.0 on macOS. Under Node 20.19.4, `bare-pack`
 crashes with exit status 139 before writing a bundle.
 
-`npm install` is about 230 MB. The largest pieces are the Bare binary for your
+`npm install` is about 240 MB. The largest pieces are the Bare binary for your
 machine (71 MB), `bare-lief`, which `bare-link` edits libraries with (71 MB), and
 `bare-tls` (52 MB), which ships prebuilds for every host. Probe 7
 needs `bare-build`, which installs a Bare executable for all 13 hosts it can
@@ -44,7 +44,8 @@ target, about 1 GB, so it lives in `standalone/` and `npm start` skips the probe
 until it is installed. `npm run probe:standalone` installs it and runs the probe;
 the transcript below includes it.
 
-Everything the probes write goes to `out/`. Probe 7's executable also unpacks
+Everything the probes keep goes to `out/`; probes 3, 4 and 8 also copy files
+into a temporary folder they delete afterwards. Probe 7's executable also unpacks
 its addons into your temporary directory the first time it starts; delete
 `$TMPDIR/lab-05-bundle-*` to clean up.
 
@@ -165,9 +166,9 @@ numbers change between Bare releases.
 ────────────────────────────────────────────────────────────────────────
 ```
 
-## Checked against
+## Verified against
 
 `bare` 1.33.5 (shim) resolving `bare-runtime` 1.33.4 · `bare-pack` 2.2.2 ·
 `bare-link` 3.3.0 · `bare-build` 1.1.1 · `bare-fetch` 3.4.0 · `bare-http1` 4.6.2
-— 2026-09-23, darwin-arm64. The byte counts depend on the exact dependency
+— checked 2026-09-24, darwin-arm64. The byte counts depend on the exact dependency
 tree, which `package-lock.json` pins.

@@ -32,8 +32,8 @@ Needs Node.js 18, 20 or 22; tested on macOS with Node 18.20.8, 20.19.4 and
 22.21.0, ten runs each, identical output. Probes 1–4 run under Bare; probes 5
 and 6 each run the same file under both.
 
-The six packages under `fixtures/` are hand-written, a `package.json` and a
-line or two of JavaScript each, and the runner copies them into `node_modules/`
+The six packages under `fixtures/` are hand-written, a `package.json` and
+one to three one-line JavaScript files each, and the runner copies them into `node_modules/`
 before the probes start — npm will not install them and `node_modules` is
 gitignored, so that copy is what makes them exist.
 
@@ -199,7 +199,7 @@ dependency of `bare-runtime`, `bare-url` as one of `bare-fs`'s.
 call that cannot find it. A builtin is something the program starting Bare
 hands the module system, as the loader's `builtins` option: a map from name to
 exports, answered under a `builtin:` URL (`bare-module/lib/loader.js:400-420`).
-The `bare` command passes none (`bare/bin/bare.js:87-98`), so every name goes to
+The `bare` command passes none (`bare/bin/bare.js:87-99`), so every name goes to
 the search. The probe hands `bare-module`'s public `createRequire` a one-entry
 map to show the other side: `timers` then answers from the map, at
 `builtin:timers`. `bare-timers` is the one to remember — it provides your
@@ -239,9 +239,10 @@ and arch split out of the addon host string, with the call's `require` or
 condition, so the probe reads the set back through public behaviour: `bare`,
 `node`, `darwin`, `arm64` and `require` yes; `import`, `linux` and `browser` no.
 
-Which of `bare` and `node` wins is decided by the package. `packageTarget` walks
-a conditions object in key order and takes the first key that is `default` or
-is in the set (`bare-module-resolve/index.js:680-704`). `cond-pkg` lists `bare`
+Which of `bare` and `node` wins is decided by the package. `conditionMatches`
+walks a conditions object in key order and takes the first key that is `default`
+or is in the set (`bare-module-resolve/index.js:680-704`), and `packageTarget`
+follows what it yields (`:575-587`). `cond-pkg` lists `bare`
 first and gets `bare.js`; `cond-order` lists `node` first and gets `node.js`.
 Same binary, same set, opposite answers — so a dependency that writes
 `{ "node": …, "bare": … }` ships you its Node build under Bare, and that is
@@ -288,7 +289,7 @@ lab's `imports` map gains one line:
 ```
 
 and `bare-zlib` exports `gzipSync`, `gunzipSync`, `createGzip` and the rest
-under those names (`bare-zlib/index.js:240-374`), so the code does not change.
+under those names (`bare-zlib/index.js:240-376`), so the code does not change.
 On this machine the compressed bytes are identical under both runtimes, which
 the base64 line shows; that is a measurement here, not a promise the two
 libraries make. `bare-zlib` is also a native addon, and its C is the prebuild
@@ -312,5 +313,5 @@ Probe 2's addon candidate count depends on where you cloned this, and probe 3's
 Bare 1.33.5 source · `bare` 1.33.5 shim · `bare-runtime` 1.33.4 binary ·
 `bare-module` 7.0.3 · `bare-module-traverse` 2.5.6 · `bare-module-resolve`
 1.12.5 · `bare-addon-resolve` 1.10.1 · `bare-zlib` 1.4.1 · `bare-node-runtime`
-1.5.0 (probe 6's note only) · darwin-arm64 · Node 18.20.8, 20.19.4, 22.21.0 —
+1.5.1 (probe 6's note only) · darwin-arm64 · Node 18.20.8, 20.19.4, 22.21.0 —
 checked 2026-09-24.

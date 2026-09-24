@@ -147,8 +147,8 @@ binary reports.
 `fetch` and `TextEncoder` are absent. `setTimeout` is present, but it comes
 from the `bare-timers` package that the bootstrap installs as a global, not from
 the runtime. Four names in that list — `suspend`, `idle`, `resume`, `wakeup` —
-have no Node counterpart, and they are the reason this runtime can live on a
-phone. Part 3 is about them.
+have no Node counterpart, and they are how a host puts this runtime to sleep
+and wakes it. Part 3 is about them.
 
 **3 — Resolution.** The probe runs twice, and the difference is the whole point.
 
@@ -205,5 +205,5 @@ bin link and even if you have a different `bare` on your `PATH`.
 
 ## Verified against
 
-Bare 1.33.5 source · `bare` 1.33.5 shim · `bare-runtime` 1.33.4 binary · `bare-crypto` 1.15.3 · `bare-fetch` 3.4.0 · `bare-http1` 4.6.2 · darwin-arm64 · Node 18.20.8, 20.19.4, 22.21.0
+Bare 1.33.5 source · `bare` 1.33.5 shim · `bare-runtime` 1.33.4 binary · `bare-module-resolve` 1.12.5 · `bare-crypto` 1.15.3 · `bare-fetch` 3.4.0 · `bare-http1` 4.6.2 · darwin-arm64 · Node 18.20.8, 20.19.4, 22.21.0
 — checked 2026-09-24.

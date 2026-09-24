@@ -131,7 +131,12 @@ if (wanted(5)) {
 if (wanted(6)) {
   heading(6, 'Make the libraries those names point at', 'bare-link, for one Android and one iOS host')
   const dir = fresh('linked')
-  spawnSync(process.execPath, [link, '--host', 'android-arm64', '--host', 'ios-arm64', '--out', dir, '.'], { cwd: here })
+  const linked = spawnSync(process.execPath, [link, '--host', 'android-arm64', '--host', 'ios-arm64', '--out', dir, '.'], { cwd: here, encoding: 'utf8' })
+  if (linked.status !== 0) {
+    console.log(`  bare-link failed with exit status ${linked.status}:`)
+    for (const line of linked.stderr.trimEnd().split('\n')) console.log('  ' + line)
+    process.exit(1)
+  }
   const so = readdirSync(join(dir, 'arm64-v8a')).sort()
   const fw = readdirSync(dir).filter((name) => name.endsWith('.framework')).sort()
   console.log(`  ${so.length} Android libraries in arm64-v8a/, ${fw.length} iOS frameworks`)

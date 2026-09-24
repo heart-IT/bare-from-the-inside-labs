@@ -1,4 +1,5 @@
-// 'idle' is one uv_ref, and only another thread can lift it.
+// 'idle' is one uv_ref, and once the idle listeners have returned without
+// resuming, only another thread can lift it.
 //
 // bare_runtime__on_idle (bare/src/runtime.c:436-477) sets the state to
 // suspended and calls uv_ref on the signal handle at :447 — the same handle
@@ -10,10 +11,10 @@
 // process has suspended successfully, `bare_run()` will not return until
 // another thread resumes the process."
 //
-// Two children make that literal, run one after the other so the output does
-// not interleave. Both park with a 100 ms timer pending. The difference is
-// whether anything arms a *new* timer on the way down — and that difference
-// decides the fate of the timer that was already there.
+// Three children make that literal, run one after the other so the output
+// does not interleave. All park with a 100 ms timer pending. The difference is
+// whether anything arms a *new* timer on the way down, and when it is due —
+// and that decides the fate of the timer that was already there.
 const t0 = Date.now()
 const at = () => `${String(Date.now() - t0).padStart(4)} ms`
 
@@ -31,10 +32,11 @@ function park (label, rearm) {
 
       if (rearm) {
         // bare-timers stopped its uv handles on 'idle' (bare-timers/index.js:81
-        // -> binding.c:390-412). This setTimeout calls binding.timeout and
-        // re-arms the very handle that was stopped — and that handle services
-        // the whole heap, not just this one timeout.
-        setTimeout(() => console.log(at(), `  [${label}] timer armed during idle fired`), 50)
+        // -> binding.c:389-413). A setTimeout re-arms the very handle that was
+        // stopped — and that handle services the whole heap, not just this one
+        // timeout — but only when the new timeout is the earliest on the heap
+        // (index.js:107-111). Later than the pending one, nothing restarts.
+        setTimeout(() => console.log(at(), `  [${label}] ${rearm} ms timer armed during idle fired`), rearm)
       }
     })
 
@@ -44,7 +46,7 @@ function park (label, rearm) {
 
 // Child A: park and arm nothing. The pending timer is frozen with the loop.
 console.log(at(), '[main] A: parking a child that arms nothing')
-const a = park('A', false)
+const a = park('A', 0)
 a.suspend(0)
 
 setTimeout(() => {
@@ -55,11 +57,28 @@ setTimeout(() => {
     a.join()
     console.log(at(), '[main] A joined — the overdue timer drained on resume, not during the park')
 
-    // Child B: identical, except the idle listener schedules one new timer.
+    // Child B: identical, except the idle listener schedules one new timer,
+    // due before the pending one.
     console.log(at(), '[main] B: parking a child whose idle listener arms a 50 ms timer')
-    const b = park('B', true)
+    const b = park('B', 50)
     b.suspend(0)
 
-    setTimeout(() => { b.resume(); b.join(); console.log(at(), '[main] B joined') }, 400)
+    setTimeout(() => {
+      b.resume()
+      b.join()
+      console.log(at(), '[main] B joined')
+
+      // Child C: the new timer is due after the pending one, so it is not the
+      // earliest on the heap and the stopped handle is never restarted.
+      console.log(at(), '[main] C: parking a child whose idle listener arms a 300 ms timer')
+      const c = park('C', 300)
+      c.suspend(0)
+
+      setTimeout(() => {
+        console.log(at(), '[main] C: 400 ms parked and neither timer has fired. Resuming from this thread.')
+        c.resume()
+        setTimeout(() => { c.join(); console.log(at(), '[main] C joined') }, 60)
+      }, 400)
+    }, 400)
   }, 60)
 }, 400)
