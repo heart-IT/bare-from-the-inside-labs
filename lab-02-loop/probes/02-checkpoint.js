@@ -11,8 +11,8 @@
 // microtasks when the stack returns to depth one (libjs/src/js.cc:1748-1764),
 // so the promise waits for the whole batch.
 //
-// Node re-enters JavaScript per timer callback, so its checkpoint falls
-// between them. Neither is wrong; they batch differently.
+// Node runs a microtask checkpoint between timer callbacks, so the promise
+// runs between them. Neither is wrong; they place the checkpoint differently.
 setTimeout(() => {
   console.log('t1')
   Promise.resolve().then(() => console.log('t1-micro'))

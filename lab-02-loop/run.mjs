@@ -46,7 +46,8 @@ if (wanted(2)) {
   node('probes/02-checkpoint.js')
   console.log('\n  Both timeouts are due together. Bare drains the whole expired')
   console.log('  batch in one entry into JavaScript, so the promise scheduled by')
-  console.log('  the first waits for the second. Node re-enters per callback.')
+  console.log('  the first waits for the second. Node runs a microtask checkpoint')
+  console.log('  between timer callbacks.')
 }
 
 if (wanted(3)) {
@@ -69,8 +70,9 @@ if (wanted(5)) {
   bare('probes/05-to-do-list.js')
   console.log('\n  None of the thirteen handles is yours. Six are unref\'d and most of the')
   console.log('  rest are inactive, so only active, ref\'d handles count. PREPARE is the')
-  console.log('  engine\'s own: always ref\'d, active only while it has tasks queued or')
-  console.log('  the loop is busy, and the program ended once it was the last one left.')
+  console.log('  engine\'s own: always ref\'d, started with the engine, stopped after a')
+  console.log('  pass finds no tasks queued, restarted while something else keeps the')
+  console.log('  loop alive. The program ended once it was the last one left.')
 }
 
 console.log('\n' + '─'.repeat(72))

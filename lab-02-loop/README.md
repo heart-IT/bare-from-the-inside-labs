@@ -56,7 +56,8 @@ t2
 
   Both timeouts are due together. Bare drains the whole expired
   batch in one entry into JavaScript, so the promise scheduled by
-  the first waits for the second. Node re-enters per callback.
+  the first waits for the second. Node runs a microtask checkpoint
+  between timer callbacks.
 
 ────────────────────────────────────────────────────────────────────────
   3. beforeExit is a question, not an event
@@ -111,8 +112,9 @@ exit
 
   None of the thirteen handles is yours. Six are unref'd and most of the
   rest are inactive, so only active, ref'd handles count. PREPARE is the
-  engine's own: always ref'd, active only while it has tasks queued or
-  the loop is busy, and the program ended once it was the last one left.
+  engine's own: always ref'd, started with the engine, stopped after a
+  pass finds no tasks queued, restarted while something else keeps the
+  loop alive. The program ended once it was the last one left.
 
 ────────────────────────────────────────────────────────────────────────
   Post: https://heartit.tech/bare-from-the-inside-part-2-what-actually-runs/
@@ -137,15 +139,15 @@ both callbacks execute inside one entry into JavaScript. libjs only runs
 microtasks when the stack returns to **depth one** —
 `if (depth == 1 || always_checkpoint) run_microtasks()`, `libjs/src/js.cc:1757`
 at commit `72de271`, the one Bare 1.33.5 pins — so the promise scheduled by the first callback waits
-for the second. Node re-enters JavaScript per timer callback, so its checkpoint
-falls between them.
+for the second. Node runs a microtask checkpoint between timer callbacks
+(`runNextTicks()` in its `listOnTimeout`), so the promise runs between them.
 
 The order is usual, not guaranteed. Each `setTimeout` reads the clock when it
 is called (`bare-timers/index.js:101-103`), so if a millisecond ticks over
 between the two calls they get different deadlines and can come due on
-different passes; then Node's order appears. That happened roughly once in a hundred to a few hundred runs at 50
-ms, depending on machine load, and a few times in every forty with a delay of
-`0`.
+different passes; then Node's order appears. That happened at most about once
+in a hundred runs at 50 ms under load, and far less often on an idle machine;
+with a delay of `0`, one to four times in every forty.
 
 **3 — Drain.** `bare_runtime_run` (`bare/src/runtime.c:1952-1988`) emits
 `beforeExit` *inside* its `do/while` and then re-tests `uv_loop_alive`. A
@@ -190,9 +192,10 @@ environment is created (`libjs/src/js.cc:1490-1493`). Its callback runs the
 engine's queued tasks and then stops the handle if none are left
 (`js.cc:1866-1878`, called from `on_prepare` at `:1886`); `on_check` starts it
 again whenever the loop is still alive for another reason (`:1895-1899`). It is
-never unref'd; it is active while the engine has tasks queued or something else
-keeps the loop alive, and it stops itself once neither holds — which is why the
-program exits right after the last line shows only `PREPARE`.
+never unref'd: it is active from the start, stops only after a pass finds the
+engine's task queue inactive, and is restarted while anything else keeps the loop
+alive — which is why the program exits right after the last line shows only
+`PREPARE`.
 
 ## Notes
 
@@ -201,8 +204,8 @@ than `node_modules/.bin`, so the lab runs the pinned version even if npm made no
 bin link and even if you have a different `bare` on your `PATH`.
 
 Probes 1, 3, 4 and 5 printed the same output on every run. Probe 2's Bare order
-is usual, not guaranteed (see above), and flips roughly once in a hundred to a few
-hundred full runs, depending on what else the machine is doing.
+is usual, not guaranteed (see above), and flips at most about once in a hundred
+full runs, less often on an idle machine.
 
 Probe 5's handle totals (13 and 14) were measured on darwin-arm64. They count
 every handle Bare, libjs and the loaded packages created, so another platform
