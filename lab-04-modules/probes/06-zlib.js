@@ -17,9 +17,9 @@ const runtime = typeof process === 'undefined' ? 'under Bare' : 'under Node'
 console.log(`  ${text.length} bytes -> ${packed.length} bytes gzipped -> round trip ${unpacked === text ? 'ok' : 'FAILED'} · ${runtime}`)
 console.log('  gzip bytes:', packed.toString('base64'))
 
+// bare-zlib is also a native addon. Its C is the prebuild it ships for this
+// machine, found by the same kind of search under the package's prebuilds/.
 if (typeof Bare !== 'undefined') {
-  const r = require.main._resolutions
-  const key = Object.keys(r).find((k) => k.endsWith('/06-zlib.js'))
-  const url = r[key].zlib.require
-  console.log('  and "zlib" resolved to:', url.replace(/^file:\/\/.*\/node_modules\//, '…/node_modules/'))
+  console.log('  and "zlib" resolved to:', require.resolve('zlib').replace(/^.*\/node_modules\//, '…/node_modules/'))
+  console.log('  and its C came from:', require.addon.resolve('bare-zlib').replace(/^.*\/node_modules\//, '…/node_modules/'))
 }

@@ -1,6 +1,6 @@
 // A loop with a live interval never drains, so 'idle' never arrives.
 //
-// bare_runtime__on_suspend (bare/src/runtime.c:310-358) sets the state to
+// bare_runtime__on_suspend (bare/src/runtime.c:311-359) sets the state to
 // suspending, emits 'suspend', cascades to child threads and calls the
 // embedder callback. It closes no handle and stops no timer.
 //

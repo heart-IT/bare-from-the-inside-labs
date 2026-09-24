@@ -1,12 +1,12 @@
 // 'idle' is one uv_ref, and only another thread can lift it.
 //
-// bare_runtime__on_idle (bare/src/runtime.c:435-476) sets the state to
-// suspended and calls uv_ref on the signal handle at :446 — the same handle
+// bare_runtime__on_idle (bare/src/runtime.c:436-477) sets the state to
+// suspended and calls uv_ref on the signal handle at :447 — the same handle
 // bare_runtime_setup unref'd so the runtime would never keep your program
 // alive. A ref'd async handle keeps uv_loop_alive() true, so bare_run's
 // do/while calls uv_run again and uv_run sleeps in its poll phase.
 //
-// The header states the consequence (bare/include/bare.h:104-110): "Once the
+// The header states the consequence (bare/include/bare.h:188-194): "Once the
 // process has suspended successfully, `bare_run()` will not return until
 // another thread resumes the process."
 //

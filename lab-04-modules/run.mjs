@@ -3,7 +3,7 @@
 // Six probes on how a specifier becomes a URL. Probes 5 and 6 run the same
 // file under Bare and under Node, because the difference is the lesson.
 //
-// The fixtures are five hand-written packages under fixtures/. They are copied
+// The fixtures are six hand-written packages under fixtures/. They are copied
 // into node_modules/ before the probes run: npm will not install them, and
 // node_modules is gitignored, so the copy is what makes them exist. Each is two
 // or three lines — a package.json shaped to make one resolution decision
@@ -42,6 +42,18 @@ function bare (script) {
   spawnSync(process.execPath, [shim, join(here, script)], { cwd: here, stdio: 'inherit' })
 }
 
+// For a script that dies before its first line runs: print what it wrote, then
+// the first line of the error with this machine's path cut out, then the exit
+// status. The stack below that line names bare.bundle internals whose line
+// numbers move between releases.
+function bareDies (script) {
+  const r = spawnSync(process.execPath, [shim, join(here, script)], { cwd: here, encoding: 'utf8' })
+  process.stdout.write(r.stdout)
+  const first = r.stderr.split('\n')[0].replace(/'file:\/\/[^']*\/node_modules\//g, "'…/node_modules/")
+  console.log('  ' + first)
+  console.log('  (exit status ' + r.status + ')')
+}
+
 function node (script) {
   spawnSync(process.execPath, [join(here, script)], { cwd: here, stdio: 'inherit' })
 }
@@ -50,15 +62,20 @@ if (wanted(1)) {
   heading(1, 'What is in the binary, and what you can require', 'two unrelated questions')
   bare('probes/01-builtins.js')
   console.log('\n  All five are compiled in. The two that resolved came off disk,')
-  console.log('  as transitive dependencies of bare-runtime. bare-module is the')
-  console.log('  package running the require that cannot find it.')
+  console.log('  as dependencies of bare-runtime and bare-fs. bare-module is the')
+  console.log('  package running the require that cannot find it. A builtin is')
+  console.log('  whatever the program starting Bare hands in, and `bare` hands none.')
 }
 
 if (wanted(2)) {
   heading(2, 'Resolution proposes candidates', 'in a fixed order, and asks about each one')
   bare('probes/02-candidates.js')
+  console.log('\n  The same require of too-new, written as a literal:')
+  bareDies('probes/02-engines-static.js')
   console.log('\n  Nothing here knows where a file is. It guesses in a documented')
-  console.log('  order and asks the protocol whether each guess exists.')
+  console.log('  order and asks the protocol whether each guess exists. Every name')
+  console.log('  written in a file is looked up before the file runs, which is why')
+  console.log('  the literal require never reached its own catch.')
 }
 
 if (wanted(3)) {
@@ -69,10 +86,10 @@ if (wanted(3)) {
 }
 
 if (wanted(4)) {
-  heading(4, 'The answer is a URL, filed under who asked', 'referrer, specifier, condition')
+  heading(4, 'The answer is a URL, filed under who asked', 'and an answer written down beats the search')
   bare('probes/04-resolutions.js')
   console.log('\n  That table is the contract. Walking node_modules is only how you')
-  console.log('  fill it in when nobody already has — which is Part 5.')
+  console.log('  fill it in when nobody already has. Handing it in is Part 5.')
 }
 
 if (wanted(5)) {

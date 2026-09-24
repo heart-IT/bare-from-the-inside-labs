@@ -1,6 +1,6 @@
 // Bare.suspend() is a request, not a statement.
 //
-// bare_runtime_suspend (bare/src/runtime.c:1369-1378) takes a mutex, records
+// bare_runtime_suspend (bare/src/runtime.c:1456-1465) takes a mutex, records
 // the linger, sets two flags, and uv_async_sends the runtime's signal handle.
 // It touches no JavaScript, so the statement after it runs — and runs before
 // the 'suspend' event, which has not been emitted yet.

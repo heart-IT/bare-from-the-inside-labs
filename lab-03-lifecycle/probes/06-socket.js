@@ -2,7 +2,7 @@
 // until your code closes it. Run twice: `open` leaves the socket alone,
 // `close` closes it on 'suspend' and opens a fresh one on 'resume'.
 //
-// on_suspend (bare/src/runtime.c:310-358) closes no handle, and bare-dgram
+// on_suspend (bare/src/runtime.c:311-359) closes no handle, and bare-dgram
 // subscribes to no Bare lifecycle event, so the socket's ref'd uv_udp_t keeps
 // uv_run from returning. Hyperswarm's transport is also a UDP socket (udx-native,
 // not bare-dgram) and leaves suspend()/resume() to the app the same way.

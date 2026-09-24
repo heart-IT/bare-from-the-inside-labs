@@ -13,13 +13,13 @@
     "probe:fetch": "node run.mjs 5"
   },
   "dependencies": {
-    "bare": "1.32.0",
+    "bare": "1.33.5",
     "bare-crypto": "1.15.3",
-    "bare-fetch": "3.3.0",
-    "bare-http1": "4.6.1",
-    "bare-runtime": "1.32.0"
+    "bare-fetch": "3.4.0",
+    "bare-http1": "4.6.2",
+    "bare-runtime": "1.33.4"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=18.20.8"
   }
 }

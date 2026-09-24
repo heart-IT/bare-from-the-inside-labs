@@ -23,8 +23,9 @@ npm run probe:distribution
 npm run probe:fetch
 ```
 
-Needs Node.js 18+; tested on macOS. Node is only used to launch things — the
-probes themselves run under Bare.
+Needs Node.js 18, 20 or 22; tested on macOS with Node 18.20.8, 20.19.4 and
+22.21.0. Node is only used to launch things — the probes themselves run under
+Bare.
 
 ## What you will see
 
@@ -36,8 +37,8 @@ numbers depend on what npm resolves for your platform.
   1. What is actually running?
      the npm version and the binary version may differ
 ────────────────────────────────────────────────────────────────────────
-Bare.version : v1.32.0
-Bare.versions: {"bare":"1.32.0","uv":"1.52.1","v8":"14.8.178.31"}
+Bare.version : v1.33.4
+Bare.versions: {"bare":"1.33.4","uv":"1.52.1","v8":"14.8.178.31"}
 platform/arch: darwin-arm64
 
 ────────────────────────────────────────────────────────────────────────
@@ -66,13 +67,14 @@ is stripped and the rest is resolved as an ordinary package name,
 so require("node:fs") asks for a package called "fs". There is no
 builtin table to consult. See bare-module-resolve/index.js:169-183.
 
-bare-crypto has two halves. Its JavaScript came from node_modules;
-the addon cache says where the runtime found its C:
-  builtin:bare-crypto@1.15.3
-builtin: — statically linked into this binary, matched by exact
-name@version (src/addon.c:186-214). The thirteen prebuilds under
-node_modules/bare-crypto/prebuilds went unused; delete them and
-this probe prints the same line.
+bare-crypto has two halves. Its JavaScript came from node_modules,
+and so does its C:
+  <lab>/node_modules/bare-crypto/prebuilds/darwin-arm64/bare-crypto.bare
+
+The binary has its own bare-crypto@1.15.3 too — builtin:bare-crypto@1.15.3
+loads when named — and the lookup above still went to disk. That
+copy serves Bare's own bundled JavaScript; your require() is given
+no builtins (bin/bare.js:87-99), so it looks for addons on disk.
 
 ────────────────────────────────────────────────────────────────────────
   3.5. The same probe, from an empty directory
@@ -130,18 +132,16 @@ was required.
 
 ## What each probe is for
 
-**1 — Identity.** Two numbers that are allowed to disagree, and here happen not
-to. The npm `bare` package is a shim; it does not pin a binary. It declares
+**1 — Identity.** Two numbers that are allowed to disagree, and here do. The
+npm `bare` package is a shim; it does not pin a binary. It declares
 `bare-runtime` as a peer dependency with the range `*`, so you get whichever
 `bare-runtime` npm resolves — which is why this lab pins `bare-runtime`
 explicitly, alongside `bare`, so the output above stays reproducible.
 
-They match at 1.32.0 by coincidence, not by construction. Earlier this lab ran
-`bare@1.31.2` against a `bare-runtime@1.31.0` binary and `Bare.version` said
-`v1.31.0`, because npm published `bare` at 1.31.0, 1.31.1 and 1.31.2 while
-`bare-runtime` went straight from 1.31.0 to 1.32.0 — there was no 1.31.2 binary
-to resolve. The number that matters for behaviour is always the one the binary
-reports.
+This lab installs `bare` 1.33.5, and `Bare.version` says `v1.33.4`: npm
+has a 1.33.5 shim and no 1.33.5 `bare-runtime`, so the newest binary there is to
+resolve is 1.33.4. The number that matters for behaviour is always the one the
+binary reports.
 
 **2 — Namespace.** Everything you get without installing anything. `process`,
 `fetch` and `TextEncoder` are absent. `setTimeout` is present, but it comes
@@ -159,14 +159,21 @@ special form; it is stripped, and `fs` is resolved as an ordinary package name
 (`bare-module-resolve/index.js:169-183`). There is no builtin table to consult.
 
 `bare-crypto` resolves too, and it has two halves. Its JavaScript came from
-`node_modules`. Its C is a native addon, and the addon cache shows it loaded as
-`builtin:bare-crypto@1.15.3` — statically linked into the binary, matched by the
-exact `name@version` string (`src/addon.c:186-214`). The thirteen prebuilt
-`.bare` files the package ships went unused; `rm -r
-node_modules/bare-crypto/prebuilds` and the probe prints the same line (to put
-them back, `rm -rf node_modules/bare-crypto && npm i` — a plain `npm i` sees
-the package as installed and leaves it alone). A `bare-crypto` at any other
-version would fall through to its prebuild instead.
+`node_modules`, and so did its C: `require.addon.resolve('bare-crypto')` asks
+the module system where that package's addon is, and gets one of the thirteen
+prebuilt `.bare` files the package ships. On macOS, `DYLD_PRINT_LIBRARIES=1` in front of the `bare`
+command shows the process opening that same file.
+
+The binary carries its own `bare-crypto` 1.15.3 as well, compiled in and
+registered under the exact string `bare-crypto@1.15.3` (`src/addon.c:191-219`);
+the probe proves it is there by loading `builtin:bare-crypto@1.15.3` by name.
+The lookup still went to disk. That copy serves Bare's own bundled JavaScript,
+whose addons were resolved to `builtin:` URLs when the binary was built. Your
+code's `require()` is handed no builtins (`bin/bare.js:87-99`), so every
+addon you install brings its own C, and deleting
+`node_modules/bare-crypto/prebuilds` breaks the package instead of falling back
+to the binary's copy (to put them back, `rm -rf node_modules/bare-crypto && npm
+i` — a plain `npm i` sees the package as installed and leaves it alone).
 
 Then the same file is copied into an empty temporary directory and run again.
 Nothing resolves. The binary never changed. Module resolution walks up from the
@@ -198,5 +205,5 @@ bin link and even if you have a different `bare` on your `PATH`.
 
 ## Verified against
 
-Bare 1.32.0 source · `bare` 1.32.0 shim · `bare-runtime` 1.32.0 binary · `bare-crypto` 1.15.3 · `bare-fetch` 3.3.0 · `bare-http1` 4.6.1 · darwin-arm64 · Node 22.21.0
-— checked 2026-09-14.
+Bare 1.33.5 source · `bare` 1.33.5 shim · `bare-runtime` 1.33.4 binary · `bare-crypto` 1.15.3 · `bare-fetch` 3.4.0 · `bare-http1` 4.6.2 · darwin-arm64 · Node 18.20.8, 20.19.4, 22.21.0
+— checked 2026-09-24.

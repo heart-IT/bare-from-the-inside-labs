@@ -1,9 +1,9 @@
 // A wakeup deadline is a ceiling, not an allowance.
 //
-// bare_runtime__on_wakeup (bare/src/runtime.c:375-432) sets the state to awake,
+// bare_runtime__on_wakeup (bare/src/runtime.c:376-433) sets the state to awake,
 // uv_unrefs the signal handle to unpark the loop, and starts the one timer the
-// runtime keeps for itself (:388). When that timer fires,
-// bare_runtime__on_wakeup_timeout (:361-372) sets the state to idle and calls
+// runtime keeps for itself (:389). When that timer fires,
+// bare_runtime__on_wakeup_timeout (:362-373) sets the state to idle and calls
 // uv_stop — whether or not your work finished.
 //
 // That is the asymmetry between the two numbers in this part. `linger` is

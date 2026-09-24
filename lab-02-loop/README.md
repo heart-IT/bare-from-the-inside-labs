@@ -24,8 +24,9 @@ npm run probe:exit
 npm run probe:handles
 ```
 
-Needs Node.js 18+; tested on macOS. Node launches things; probes 1–3 and 5 run
-under Bare, and probe 2 runs under both so you can see the two disagree.
+Tested with Node.js 18.20.8, 20.19.4 and 22.21.0 on macOS. Node launches
+things; probes 1–3 and 5 run under Bare, and probe 2 runs under both so you can
+see the two disagree.
 
 ## What you will see
 
@@ -129,22 +130,22 @@ whose output is a coin flip teaches nothing.
 **2 — The checkpoint.** The reason this lab exists. One file, run under Bare and
 under Node, printing two different orders.
 
-Both timeouts share a 50 ms deadline, so they come due in the same libuv timer
-phase. `bare-timers` drains its expired-timeout heap in a single call from C, so
+Both timeouts ask for 50 ms, so they almost always come due in the same libuv
+timer phase. `bare-timers` drains its expired-timeout heap in a single call from C, so
 both callbacks execute inside one entry into JavaScript. libjs only runs
 microtasks when the stack returns to **depth one** —
 `if (depth == 1 || always_checkpoint) run_microtasks()`, `libjs/src/js.cc:1757`
-at commit `72de271`, the one Bare 1.32.0 pins — so the promise scheduled by the first callback waits
+at commit `72de271`, the one Bare 1.33.5 pins — so the promise scheduled by the first callback waits
 for the second. Node re-enters JavaScript per timer callback, so its checkpoint
 falls between them.
 
-The shared deadline matters. Write `0` instead of `50` and the demo becomes a
-coin flip: a zero delay is clamped to one millisecond, and two timers armed
-microseconds apart can land either side of a millisecond boundary. Roughly one
-run in twenty then batches them differently. An explicit deadline removes the
-luck.
+The order is usual, not guaranteed. Each `setTimeout` reads the clock when it
+is called (`bare-timers/index.js:101-103`), so if a millisecond ticks over
+between the two calls they get different deadlines and can come due on
+different passes; then Node's order appears. That happened in 3 of 1,000 runs
+at 50 ms, and in up to four runs out of forty with a delay of `0`.
 
-**3 — Drain.** `bare_runtime_run` (`bare/src/runtime.c:1855-1891`) emits
+**3 — Drain.** `bare_runtime_run` (`bare/src/runtime.c:1952-1988`) emits
 `beforeExit` *inside* its `do/while` and then re-tests `uv_loop_alive`. A
 listener that schedules work sends the loop around again and gets asked again.
 `exit` is emitted after the loop, so it fires once regardless.
@@ -197,7 +198,8 @@ than `node_modules/.bin`, so the lab runs the pinned version even if npm made no
 bin link and even if you have a different `bare` on your `PATH`.
 
 Every probe's output is stable: the full run was executed 20 consecutive times
-and hashed identical each time.
+under Node 22.21.0 and 10 each under 18.20.8 and 20.19.4, and hashed identical
+each time.
 
 Probe 5's handle totals (13 and 14) were measured on darwin-arm64. They count
 every handle Bare, libjs and the loaded packages created, so another platform
@@ -205,7 +207,7 @@ may print different totals.
 
 ## Verified against
 
-Bare 1.32.0 source · `bare` 1.32.0 shim · `bare-runtime` 1.32.0 binary ·
+Bare 1.33.5 source · `bare` 1.33.5 shim · `bare-runtime` 1.33.4 binary ·
 `bare-timers` 3.2.3 · `bare-walk-handles` 2.1.0 · `bare-tcp` 2.6.1 · libjs at
-commit `72de271` · libuv 1.52.1 · darwin-arm64 · Node 22.21.0 — checked
-2026-09-14.
+commit `72de271` · libuv 1.52.1 · darwin-arm64 · Node 18.20.8, 20.19.4 and
+22.21.0 — checked 2026-09-24.

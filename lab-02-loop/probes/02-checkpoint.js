@@ -8,7 +8,7 @@
 //
 // Given that, bare-timers drains its expired heap in one call from C, so both
 // callbacks run inside a single entry into JavaScript. libjs only drains
-// microtasks when the stack returns to depth one (libjs/src/js.cc:1732-1748),
+// microtasks when the stack returns to depth one (libjs/src/js.cc:1748-1764),
 // so the promise waits for the whole batch.
 //
 // Node re-enters JavaScript per timer callback, so its checkpoint falls

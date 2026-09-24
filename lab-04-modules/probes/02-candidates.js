@@ -1,40 +1,51 @@
 // Resolution has no idea where anything is. It proposes URLs in a fixed order
 // and asks the protocol about each one; the first yes wins.
 //
-// The easiest way to see the list is to ask for something that cannot be found.
-// fakeaddon declares "addon": true and calls require.addon(), so the addon
-// resolver runs and prints every candidate it tried.
+// The easiest way to see the list is to ask for something that is not there.
+// A missing relative file prints every candidate it tried: the exact name, the
+// name with each extension, then the name as a directory with an index file.
 try {
-  require('fakeaddon')
+  require('./missing')
 } catch (e) {
-  const lines = e.message.split('\n')
-  const candidates = lines.filter((l) => l.startsWith('- '))
-  console.log(' ', e.code, '-', candidates.length, 'candidates tried, in order. The first six:')
-  for (const c of candidates.slice(0, 6)) {
-    console.log('   ', c.replace(/^- file:\/\/.*\/node_modules\//, '- …/node_modules/'))
-  }
-  console.log('    …and', candidates.length - 6, 'more.')
-  console.log('')
-  console.log('    Eight per directory: .bare and .node, versioned and unversioned,')
-  console.log('    under darwin-arm64 and darwin-universal. Then the same eight in')
-  console.log('    every ancestor prebuilds/, up to the root — so this count is a')
-  console.log('    fact about how deep you cloned this lab, not about Bare.')
+  const candidates = e.message.split('\n').filter((l) => l.startsWith('- '))
+  console.log(' ', e.code, '-', candidates.length, 'candidates, in order:')
+  for (const c of candidates) console.log('   ', c.replace(/^- file:\/\/.*\/probes\//, '- …/probes/'))
 }
 
 console.log('')
 
-// Modules take the same shape. This package's "main" is "lib/entry" — no
-// extension, and no file of that name. Node's ESM loader refuses an
-// extensionless import; Bare probes, because one algorithm serves both formats.
+// The same list is what finds a real file. This package's "main" is
+// "lib/entry": no extension, and no file of that name. The first candidate gets
+// no, the second (lib/entry.js) gets yes.
 console.log(' ', require('mainless'))
 console.log('  resolved to:', require.resolve('mainless').replace(/^.*\/node_modules\//, '…/node_modules/'))
 
 console.log('')
 
-// A package.json is read for more than its exports. "engines" is checked
-// against Bare.versions at resolve time, and throws.
+// Addons run the same pattern through bare-addon-resolve. The name is held in a
+// variable so the lookup happens on this line and lists its candidates.
+const addon = 'fakeaddon'
+
 try {
-  require('too-new')
+  require.addon.resolve(addon)
 } catch (e) {
-  console.log(' ', e.code, '- engines are enforced when the package is resolved, not at install time')
+  const candidates = e.message.split('\n').filter((l) => l.startsWith('- '))
+  console.log(' ', e.code, '-', candidates.length, 'addon candidates. The first eight:')
+  for (const c of candidates.slice(0, 8)) {
+    console.log('   ', c.replace(/^- file:\/\/.*\/node_modules\//, '- …/node_modules/'))
+  }
+  console.log('    …then the same eight in every ancestor directory, up to the root,')
+  console.log('    so this count is a fact about how deep you cloned the lab.')
+}
+
+console.log('')
+
+// "engines" is checked against Bare.versions when the package is looked up, and
+// throws. Held in a variable, the lookup happens here and can be caught.
+const tooNew = 'too-new'
+
+try {
+  require(tooNew)
+} catch (e) {
+  console.log(' ', e.code, '- caught, because this lookup ran on the line that asked')
 }

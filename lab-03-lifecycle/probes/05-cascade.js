@@ -1,7 +1,7 @@
 // One Bare.suspend() on the main thread reaches every child runtime.
 //
 // The tail of bare_runtime__on_suspend walks the runtime's thread list
-// (bare/src/runtime.c:346-355) and calls bare_thread_suspend on each with the
+// (bare/src/runtime.c:347-356) and calls bare_thread_suspend on each with the
 // same linger. on_wakeup and on_resume carry the same loop. Nobody addressed
 // the child below; it is suspended because its parent was.
 //

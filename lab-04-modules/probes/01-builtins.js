@@ -1,23 +1,33 @@
 // Being compiled into the binary and being requireable are unrelated.
 //
-// bare/src/builtins.json lists the native addons statically linked into the
-// runtime. All five names below are in the binary you are running. Three of
-// them cannot be required, and the two that can came off disk instead.
+// All five names below are in the binary you are running (`strings` on it shows
+// each with its version). Three of them cannot be required, and the two that can
+// came off disk instead, as transitive dependencies of bare-runtime.
 //
-// Module.load does have a branch for builtin: URLs (bare-module/index.js:432),
-// but it reads from a `builtins` object the embedder supplies, and the bare CLI
-// supplies none. Hence builtinModules === [].
+// A builtin is something whoever starts Bare hands the module system: the
+// loader's `builtins` option, a map from name to exports
+// (bare-module/lib/loader.js:400-420). The `bare` command hands it none
+// (bare/bin/bare.js:87-98), so every name goes to the search.
 const names = ['bare-module', 'bare-timers', 'bare-inspect', 'bare-url', 'bare-path']
 
 for (const name of names) {
   try {
     require(name)
-    console.log(' ', name.padEnd(14), 'RESOLVED  <-', require.resolve(name))
+    console.log(' ', name.padEnd(14), 'RESOLVED  <-', require.resolve(name).replace(/^.*\/node_modules\//, '…/node_modules/'))
   } catch (e) {
     console.log(' ', name.padEnd(14), e.code)
   }
 }
 
 console.log('')
-console.log('  builtinModules:', JSON.stringify(require.main.constructor.builtinModules))
+
+// The same module system, handed a builtins map through its public
+// createRequire option. require.main.constructor is bare-module itself.
+const Module = require.main.constructor
+const handed = Module.createRequire(module.url, {
+  protocol: module.protocol,
+  builtins: { timers: { from: 'the embedder' } }
+})
+
+console.log('  handed { timers }: require("timers") ->', JSON.stringify(handed('timers')), 'at', handed.resolve('timers'))
 console.log('  typeof setTimeout:', typeof setTimeout, '(bare-timers, and you cannot require it)')

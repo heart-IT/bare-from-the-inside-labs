@@ -14,8 +14,5 @@ const runtime = typeof process === 'undefined' ? 'under Bare' : 'under Node'
 console.log(' ', describe(), '·', runtime)
 
 if (typeof Bare !== 'undefined') {
-  const r = require.main._resolutions
-  const key = Object.keys(r).find((k) => k.endsWith('/store.js'))
-  const url = r[key].fs.require
-  console.log('  and "fs" resolved to:', url.replace(/^file:\/\/.*\/node_modules\//, '…/node_modules/'))
+  console.log('  and "fs" resolved to:', require.resolve('fs').replace(/^.*\/node_modules\//, '…/node_modules/'))
 }

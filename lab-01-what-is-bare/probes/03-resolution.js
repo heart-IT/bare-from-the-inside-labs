@@ -33,20 +33,33 @@ if (resolved.has('bare-fs')) {
 }
 
 if (resolved.has('bare-crypto')) {
-  // The JavaScript half came from node_modules. The C half is a native addon,
-  // and the addon cache records where the runtime found it.
-  const key = Object.keys(Bare.Addon.cache).find((k) => k.includes('bare-crypto'))
+  // The JavaScript half came from node_modules. The C half is a native addon;
+  // require.addon.resolve() asks the module system where the package's addon
+  // is, and returns the file it settled on.
+  const { version } = require('bare-crypto/package')
+  const found = require.addon.resolve('bare-crypto')
   console.log('')
-  console.log('bare-crypto has two halves. Its JavaScript came from node_modules;')
-  console.log('the addon cache says where the runtime found its C:')
-  console.log('  ' + key)
-  if (key.startsWith('builtin:')) {
-    console.log('builtin: — statically linked into this binary, matched by exact')
-    console.log('name@version (src/addon.c:186-214). The thirteen prebuilds under')
-    console.log('node_modules/bare-crypto/prebuilds went unused; delete them and')
-    console.log('this probe prints the same line.')
+  console.log('bare-crypto has two halves. Its JavaScript came from node_modules,')
+  console.log('and so does its C:')
+  console.log('  ' + found)
+
+  // The binary carries its own copy, compiled in under the exact string
+  // name@version (src/addon.c:191-219). Name it and it loads.
+  const builtin = 'builtin:bare-crypto@' + version
+  let inBinary = true
+  try {
+    require.addon(builtin)
+  } catch {
+    inBinary = false
+  }
+  console.log('')
+  if (inBinary) {
+    console.log('The binary has its own ' + builtin.slice('builtin:'.length) + ' too — ' + builtin)
+    console.log('loads when named — and the lookup above still went to disk. That')
+    console.log("copy serves Bare's own bundled JavaScript; your require() is given")
+    console.log('no builtins (bin/bare.js:87-99), so it looks for addons on disk.')
   } else {
-    console.log('file: — the installed version is not the one linked into this')
-    console.log('binary, so the runtime fell through to the prebuild on disk.')
+    console.log('The binary has no bare-crypto@' + version + ' of its own; the lookup')
+    console.log('above went to disk, as it does for every addon you install.')
   }
 }

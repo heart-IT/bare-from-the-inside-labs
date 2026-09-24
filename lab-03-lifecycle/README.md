@@ -26,11 +26,14 @@ npm run probe:cascade
 npm run probe:socket
 ```
 
-Needs Node.js 18+; tested on macOS. Node launches things; every probe runs
-under Bare. Every probe ends itself — nothing here needs killing.
+Tested with Node.js 18.20.8, 20.19.4 and 22.21.0 on macOS. Node launches
+things; every probe runs under Bare. Every probe ends itself — nothing here
+needs killing.
 
-The millisecond figures below drift by a few between runs. The orderings and the
-magnitudes do not, and they are the point.
+The millisecond figures below vary between runs: by up to 40 ms in probes 3
+and 4, whose clock runs across several child-thread start-ups, and by a few
+elsewhere. Across 30 runs (ten under each Node version above) every line and its
+order matched once each figure was masked; the orderings are the point.
 
 ## What you will see
 
@@ -61,10 +64,10 @@ tick at 402 ms
 tick at 603 ms
 tick at 804 ms
 tick at 1005 ms
-tick at 1207 ms
+tick at 1206 ms
 tick at 1407 ms
-tick at 1608 ms
-tick at 1809 ms
+tick at 1607 ms
+tick at 1808 ms
 2001 ms — still suspending, never idle. Leaving via Bare.exit.
 
   on_suspend closes no handle and stops no timer. A ref'd interval
@@ -76,17 +79,17 @@ tick at 1809 ms
      two children: one arms a timer on the way down, one does not
 ────────────────────────────────────────────────────────────────────────
    0 ms [main] A: parking a child that arms nothing
-   9 ms   [A] parked, 100 ms timer still pending
- 409 ms [main] A: 400 ms parked and that timer has not fired. Resuming from this thread.
- 409 ms   [A] resumed
- 409 ms   [A] the pending 100 ms timer fired
- 469 ms [main] A joined — the overdue timer drained on resume, not during the park
- 469 ms [main] B: parking a child whose idle listener arms a 50 ms timer
- 499 ms   [B] parked, 100 ms timer still pending
- 549 ms   [B] timer armed during idle fired
- 600 ms   [B] the pending 100 ms timer fired
- 898 ms   [B] resumed
- 898 ms [main] B joined
+  11 ms   [A] parked, 100 ms timer still pending
+ 412 ms [main] A: 400 ms parked and that timer has not fired. Resuming from this thread.
+ 412 ms   [A] resumed
+ 412 ms   [A] the pending 100 ms timer fired
+ 473 ms [main] A joined — the overdue timer drained on resume, not during the park
+ 473 ms [main] B: parking a child whose idle listener arms a 50 ms timer
+ 491 ms   [B] parked, 100 ms timer still pending
+ 543 ms   [B] timer armed during idle fired
+ 592 ms   [B] the pending 100 ms timer fired
+ 890 ms   [B] resumed
+ 890 ms [main] B joined
 
   A parked with a timer pending and it stayed pending — bare-timers
   stops its uv handles on 'idle'. B armed one new timer from its idle
@@ -100,18 +103,18 @@ tick at 1809 ms
      and it closes the window without cancelling the work
 ────────────────────────────────────────────────────────────────────────
    0 ms [main] A: 100 ms of budget, 300 ms of work
-   9 ms   [A] idle — asking for 100 ms and starting 300 ms of work in it
-   9 ms   [A] wakeup, deadline 100
-   9 ms   [A] ...which is 200 ms more than the budget
- 110 ms   [A] idle again — window closed, 300 ms of work still pending
- 310 ms   [A] the 300 ms of work finished
- 409 ms [main] A joined — the deadline closed the window; it did not cancel the work
- 409 ms [main] B: 200 ms of budget, 30 ms of work
- 432 ms   [B] idle — asking for 200 ms and starting 30 ms of work in it
- 432 ms   [B] wakeup, deadline 200
- 462 ms   [B] the 30 ms of work finished
- 462 ms   [B] idle again — window closed, 30 ms of work already done
- 831 ms [main] B joined — the loop emptied first, so the deadline was never reached
+  11 ms   [A] idle — asking for 100 ms and starting 300 ms of work in it
+  11 ms   [A] wakeup, deadline 100
+  11 ms   [A] ...which is 200 ms more than the budget
+ 112 ms   [A] idle again — window closed, 300 ms of work still pending
+ 312 ms   [A] the 300 ms of work finished
+ 411 ms [main] A joined — the deadline closed the window; it did not cancel the work
+ 411 ms [main] B: 200 ms of budget, 30 ms of work
+ 426 ms   [B] idle — asking for 200 ms and starting 30 ms of work in it
+ 426 ms   [B] wakeup, deadline 200
+ 457 ms   [B] the 30 ms of work finished
+ 458 ms   [B] idle again — window closed, 30 ms of work already done
+ 825 ms [main] B joined — the loop emptied first, so the deadline was never reached
 
   A asked for 100 ms and started 300 ms of work: the deadline stopped
   the loop on time and the work finished afterwards, outside the
@@ -121,12 +124,12 @@ tick at 1809 ms
   5. Suspension cascades; sockets do not
      one Bare.suspend(), two runtimes
 ────────────────────────────────────────────────────────────────────────
- 109 ms [main]   suspend, linger 1234
- 109 ms   [thread] suspend, linger 1234 — nobody addressed me
- 110 ms   [thread] idle — the interval was the only thing keeping me busy
- 260 ms [main]   resume
- 260 ms   [thread] resume
- 409 ms [main]   joined
+ 111 ms [main]   suspend, linger 1234
+ 111 ms   [thread] suspend, linger 1234 — nobody addressed me
+ 112 ms   [thread] idle — the interval was the only thing keeping me busy
+ 262 ms [main]   resume
+ 262 ms   [thread] resume
+ 411 ms [main]   joined
 
   Nobody addressed the child. on_suspend walks the thread list and
   hands each child the same request and the same linger. What it does
@@ -162,7 +165,7 @@ second socket received "ping"
 
 ## What each probe is for
 
-**1 — Request.** `bare_runtime_suspend` (`bare/src/runtime.c:1369-1378`) takes a
+**1 — Request.** `bare_runtime_suspend` (`bare/src/runtime.c:1456-1465`) takes a
 mutex, records the linger, sets two flags and `uv_async_send`s the runtime's
 signal handle. It touches no JavaScript, which is why the statement after
 `Bare.suspend()` runs — and runs *before* the `suspend` event, which has not
@@ -171,7 +174,7 @@ been emitted yet. The request is read on the loop's next turn.
 One step is missing from those ten lines, because it cannot be done there.
 `uv_ref` is not safe to call from another thread and `bare_runtime_suspend`
 accepts calls from any thread, so the JavaScript binding does it first
-(`:782-805`), and the signal handler gives it back at `:569` unless the loop is
+(`:793-816`), and the signal handler gives it back at `:570` unless the loop is
 already parked. Without that ref, a program whose last statement is
 `Bare.suspend()` could drain and exit before the signal was ever read.
 
@@ -180,7 +183,7 @@ timer with linger: `on_suspend` hands it to your listeners, to each child thread
 and to the embedder callback, and keeps it only to reuse on a
 resuspend.
 
-**2 — Drain.** `bare_runtime__on_suspend` (`:310-358`) sets the state to
+**2 — Drain.** `bare_runtime__on_suspend` (`:311-359`) sets the state to
 `suspending`, emits the event, cascades, and calls the embedder callback. It
 closes no handle and stops no timer, so Part 2's rule still decides everything:
 `uv_run` returns when libuv has nothing left, and a `setInterval` means it never
@@ -194,12 +197,12 @@ grandchild, and `suppressSignals: true` installs no-op signal handlers on the
 shim (`bare-runtime/lib/spawn.js`), so nothing is forwarded. A SIGKILL to the
 shim orphans the binary, which keeps running and keeps writing to the terminal.
 
-**3 — Parked.** `bare_runtime__on_idle` (`:435-476`) sets the state to
-`suspended` and calls `uv_ref` on the signal handle at `:446` — the same handle
+**3 — Parked.** `bare_runtime__on_idle` (`:436-477`) sets the state to
+`suspended` and calls `uv_ref` on the signal handle at `:447` — the same handle
 `bare_runtime_setup` unref'd so the runtime would never keep your program alive.
 A ref'd async handle keeps `uv_loop_alive()` true, so `bare_run`'s `do/while`
 calls `uv_run` again and `uv_run` sleeps in its poll phase. Hence the header
-(`bare/include/bare.h:104-110`): "`bare_run()` will not return until another
+(`bare/include/bare.h:188-194`): "`bare_run()` will not return until another
 thread resumes the process."
 
 Two children make the next part concrete, and it is the footgun worth taking
@@ -214,21 +217,21 @@ too, on schedule, as though the park had never happened. The stop is not a lock.
 On a phone that is the difference between a parked worker and one that keeps
 working after the platform expected silence.
 
-**4 — Deadline.** `bare_runtime__on_wakeup` (`:375-432`) unparks the loop and
-starts the one timer the runtime keeps for itself (`:388`). When it fires,
-`bare_runtime__on_wakeup_timeout` (`:361-372`) sets the state to `idle` and
+**4 — Deadline.** `bare_runtime__on_wakeup` (`:376-433`) unparks the loop and
+starts the one timer the runtime keeps for itself (`:389`). When it fires,
+`bare_runtime__on_wakeup_timeout` (`:362-373`) sets the state to `idle` and
 calls `uv_stop`, finished work or not. `uv_timer_start` appears exactly once in
 `runtime.c`, and that is the line — which is the proof that `linger` is advisory
 and `deadline` is not.
 
 A deadline closes the window; it does not cancel the work. Child **A** asked for
-100 ms and started 300 ms of work: the window ended on time at 110 ms and the
-work completed afterwards, outside it. Child **B** finished early, so its
-deadline was never reached. Each window gets its own runtime here, because
-otherwise A's leftovers would land in the middle of B.
+100 ms and started 300 ms of work: the window closed 100 to 102 ms after it
+opened and the work completed afterwards, outside it. Child **B** finished
+early, so its deadline was never reached. Each window gets its own runtime
+here, because otherwise A's leftovers would land in the middle of B.
 
 **5 — Cascade.** The tail of `on_suspend` walks the runtime's thread list
-(`:346-355`) and hands each child the same request with the same linger;
+(`:347-356`) and hands each child the same request with the same linger;
 `on_wakeup` and `on_resume` carry the same loop. Nobody addressed the child in
 this probe — it is suspended because its parent was.
 
@@ -277,6 +280,6 @@ outside.
 
 ## Verified against
 
-Bare 1.32.0 source · `bare` 1.32.0 shim · `bare-runtime` 1.32.0 binary ·
-`bare-timers` 3.2.3 · `bare-dgram` 1.1.1 · darwin-arm64 · Node 22.21.0 — checked
-2026-09-14.
+Bare 1.33.5 source · `bare` 1.33.5 shim · `bare-runtime` 1.33.4 binary ·
+`bare-timers` 3.2.3 · `bare-dgram` 1.1.1 · darwin-arm64 · Node 18.20.8, 20.19.4
+and 22.21.0 — checked 2026-09-24.

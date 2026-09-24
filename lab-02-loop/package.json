@@ -13,12 +13,12 @@
     "probe:handles": "node run.mjs 5"
   },
   "dependencies": {
-    "bare": "1.32.0",
-    "bare-runtime": "1.32.0",
+    "bare": "1.33.5",
+    "bare-runtime": "1.33.4",
     "bare-tcp": "2.6.1",
     "bare-walk-handles": "2.1.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=18.20.8"
   }
 }
